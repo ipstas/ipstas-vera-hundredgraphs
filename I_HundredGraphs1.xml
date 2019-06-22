@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<!-- I_HundredGraphs1.xml -->
+<implementation>
+	<specVersion>
+		<major>1</major>
+		<minor>0</minor>
+	</specVersion>
+	<functions>
+		local MIN_VERSION = 111183
+
+		local plugin
+		
+		function startup(lul_device)
+			if (package.path:find ("/etc/cmh-ludl/?.lua;/etc/cmh-lu/?.lua", 1, true) == nil) then
+				package.path = package.path .. ";/etc/cmh-ludl/?.lua;/etc/cmh-lu/?.lua"
+			end
+
+			package.loaded.L_HundredGraphs1 = nil
+			plugin = require("L_HundredGraphs1")
+			if (package.loaded.L_HundredGraphs1 == nil)
+			then
+				luup.log("HundredGraphs plugin: plugin is not installed correctly. Library L_HundredGraphs1 cannot be loaded.", 1)
+				luup.task("Plugin not correctly installed", 2, "L_HundredGraphs1 plugin", -1)
+				return false
+			end
+
+			luup.log("HundredGraphs plugin: library L_HundredGraphs1 loaded")
+
+			return plugin.startup(lul_device)
+		end
+
+	</functions>
+	<startup>startup</startup>
+	<actionList>
+		<action>
+			<serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
+			<name>HundredGraphs</name>
+			<run>
+				return -- what we do here doesn't matter, luup uses the relatedStateVariable directly
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
+			<name>SetEnabled</name>
+			<run>
+				luup.variable_set( "urn:hundredgraphs-com:serviceId:HundredGraphs1", "Enabled",
+					lul_settings.newEnabledValue, lul_device )
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
+			<name>GetInterval</name>
+			<run>
+				return luup.variable_get("urn:hundredgraphs-com:serviceId:HundredGraphs1", "Interval", lul_device)
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
+			<name>SetInterval</name>
+			<run>
+				luup.log("HundredGraphs SetInterval called: " .. (lul_settings.newIntervalValue or "empty"))
+				local newInterval = lul_settings.newIntervalValue
+				if newInterval ~= nil then newInterval = tonumber(newInterval, 10) end
+				if newInterval ~= nil and newInterval > 0 then
+					luup.variable_set("urn:hundredgraphs-com:serviceId:HundredGraphs1", "Interval", newInterval, lul_device)
+					return true
+				end
+				return false
+			</run>
+		</action>	
+	</actionList>
+</implementation>

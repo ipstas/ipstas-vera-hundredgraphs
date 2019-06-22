@@ -1,0 +1,240 @@
+{
+	"default_icon": "http://www.hundredgraphs.com/img/graphs.png",
+	"DisplayStatus": {},
+	"doc_url": {
+		"doc_forced_url": {
+			"text": "https://www.hundredgraphs.com/apidocs"
+		}
+	},
+	"Tabs": [{
+		"Label": {
+			"lang_tag": "ui7_tabname_control",
+			"text": "Control"
+		},
+		"Position": "0",
+		"TabType": "flash",
+		"TopNavigationTab": 1,
+		"ControlGroup": [{
+			"id": "1",
+			"isSingle": "1",
+			"scenegroup": "1"
+		}],
+		"SceneGroup": [{
+			"id": "1",
+			"top": "0",
+			"left": "1",
+			"x": "2",
+			"y": "1"
+		}],
+		"Control": [
+			{
+				"ControlGroup": "1",
+				"ControlType": "multi_state_button",
+				"top": "0",
+				"left": "1",
+				"Display": {
+					"Top": 0,
+					"Left": 90,
+					"Width": 70,
+					"Height": 24
+				},
+				"states": [{
+						"Label": {
+							"lang_tag": "tb_enabled",
+							"text": "Enabled"
+						},
+						"Display": {
+							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+							"Variable": "Enabled",
+							"Value": "1"
+						},
+						"Command": {
+							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+							"Action": "SetEnabled",
+							"Parameters": [{
+								"Name": "newEnabledValue",
+								"Value": "1"
+							}]
+						},
+						"ControlCode": "tb_enable"
+					},
+					{
+						"Label": {
+							"lang_tag": "tb_disabled",
+							"text": "Disabled"
+						},
+						"Display": {
+							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+							"Variable": "Enabled",
+							"Value": "0"
+						},
+						"Command": {
+							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+							"Action": "SetEnabled",
+							"Parameters": [{
+								"Name": "newEnabledValue",
+								"Value": "0"
+							}]
+						},
+						"ControlCode": "tb_disable"
+					}
+				]
+			},
+			{
+				"ControlType": "input",
+				"ID": "HGInterval",
+				"top": "0",
+				"left": "2",
+				"Label": {
+					"lang_tag": "tb_trip",
+					"text": "Interval"
+				},
+				"Display": {
+					"Top": 8,
+					"Left": 200,
+					"Width": 120,
+					"Height": 24,
+					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+					"Variable": "Interval",
+					"Value": "1"
+				},
+				"Command": {
+					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+					"Action": "SetInterval",
+					"Parameters": [
+						{
+							"Name": "newIntervalValue",
+							"ID": "HGInterval"
+						}
+					] 
+				},
+				"ControlCode": "cmd_trip"
+			},
+			{
+				"ControlType": "button",
+				"top": "0",
+				"left": "3",
+				"Label": {
+					"lang_tag": "cmd_set",
+					"text": "Set" 
+				},
+				"Display": {
+					"Top": 60,
+					"Left": 220,
+					"Width": 50,
+					"Height": 20 
+				},
+				"Command": {
+					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+					"Action": "SetInterval",	
+					"Parameters": [
+						{
+							"Name": "newIntervalValue",
+							"ID": "HGInterval"
+						}
+					] 
+				} 
+			},
+			{
+				"ControlGroup": "1",
+				"ControlType": "variable",
+				"top": "1",
+				"left": "0",
+				"HorizontalMultiplier": 1,
+				"Display": {
+					"Top": 60,
+					"Left": 0,
+					"Width": 320,
+					"Height": 32,
+					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+					"Variable": "Interval"
+				}
+			},
+			{
+				"ControlGroup": "1",
+				"ControlType": "variable",
+				"top": "1",
+				"left": "1",
+				"HorizontalMultiplier": 1,
+				"Display": {
+					"Top": 60,
+					"Left": 60,
+					"Width": 320,
+					"Height": 32,
+					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+					"Variable": "lastRun"
+				}
+			},
+			{
+				"ControlType": "label",
+				"top": 0,
+				"left": 0,
+				"HorizontalMultiplier": 4,
+				"Display": {
+					"Top": 90,
+					"Left": 0,
+					"Width": 384,
+					"Height": 24
+				},
+				"Label": {
+					"lang_tag": "hundredgraphs_about",
+					"text": "<p>HundredGraphs logger &#169; 2019 HundredGraphs, All Rights Reserved.</p>
+					<p><b><a href=\"https://www.hundredgraphs.com\">HundredGraphs</a>. </p>"
+				}
+			}
+		]
+	},
+	{
+		"Label": {
+			"lang_tag": "hg_devices",
+			"text": "Devices"
+		},
+		"Position": 1,
+		"TopNavigationTab": 1,
+		"TabType": "javascript",
+		"ScriptName": "J_HundredGraphs1.js",
+		"Function": "HundredGraphs.about"
+	},
+	{
+		"Label": {
+			"lang_tag": "ui7_advanced",
+			"text": "Advanced"
+		},
+		"Position": 3,
+		"TabType": "javascript",
+		"ScriptName": "shared.js",
+		"Function": "advanced_device"
+	},
+	{
+		"Label": {
+			"lang_tag": "ui7_logs",
+			"text": "Logs"
+		},
+		"Position": 4,
+		"TabType": "javascript",
+		"ScriptName": "shared.js",
+		"Function": "device_logs"
+	},
+	{
+		"Label": {
+			"lang_tag": "ui7_notifications",
+			"text": "Notifications"
+		},
+		"Position": 5,
+		"TabType": "javascript",
+		"ScriptName": "shared.js",
+		"Function": "device_notifications"
+	},
+	{
+		"Label": {
+			"lang_tag": "ui7_device_scenes",
+			"text": "Scenes"
+		},
+		"Position": 6,
+		"TabType": "javascript",
+		"ScriptName": "shared.js",
+		"Function": "device_scenes"
+	}
+],
+	"DeviceType": "urn:hundredgraphs-com:device:HundredGraphs:1"
+}

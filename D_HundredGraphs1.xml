@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!-- D_HundredGraphs1.xml -->
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+    <specVersion>
+        <major>1</major>
+        <minor>0</minor>
+    </specVersion>
+    <device>
+        <deviceType>urn:hundredgraphs-com:device:HundredGraphs:1</deviceType>
+        <staticJson>D_HundredGraphs1.json</staticJson>
+        <friendlyName>HundredGraphs</friendlyName>
+        <manufacturer>HundredGraphs</manufacturer>
+        <manufacturerURL>https://www.hundredgraphs.com/</manufacturerURL>
+        <serviceList>
+            <service>
+                <serviceType>urn:hundredgraphs-com:service:HundredGraphs:1</serviceType>
+                <serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
+                <SCPDURL>S_HundredGraphs1.xml</SCPDURL>
+            </service>
+            <service>
+                <serviceType>urn:schemas-micasaverde-com:service:SecuritySensor:1</serviceType>
+                <serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
+                <SCPDURL>S_SecuritySensor1.xml</SCPDURL>
+            </service>
+            <service>
+                <serviceType>urn:schemas-micasaverde-com:service:HaDevice:1</serviceType>
+                <serviceId>urn:micasaverde-com:serviceId:HaDevice1</serviceId>
+                <SCPDURL>S_HaDevice1.xml</SCPDURL>
+            </service>
+        </serviceList>
+        <implementationList>
+            <implementationFile>I_HundredGraphs1.xml</implementationFile>
+        </implementationList>
+    </device>
+</root>
