@@ -7,6 +7,12 @@
 	</specVersion>
 	<serviceStateTable>
 		<stateVariable sendEvents="Yes">
+			<name>API</name>
+			<dataType>string</dataType>
+			<defaultValue></defaultValue>
+			<shortCode>API</shortCode>
+		</stateVariable>
+		<stateVariable sendEvents="Yes">
 			<name>Interval</name>
 			<dataType>string</dataType>
 			<defaultValue>600</defaultValue>
@@ -26,6 +32,27 @@
 		</stateVariable>
 	</serviceStateTable>
 	<actionList>
+		<action>
+			<name>SetAPI</name>
+			<argumentList>
+				<argument>
+					<name>newAPIValue</name>
+					<relatedStateVariable>API</relatedStateVariable>
+					<direction>in</direction>
+				</argument>
+			</argumentList>
+		</action>
+		<action>
+			<name>GetAPI</name>
+			<argumentList>
+				<argument>
+					<name>ResultValue</name>
+					<relatedStateVariable>API</relatedStateVariable>
+					<direction>out</direction>
+					<retval/>
+				</argument>
+			</argumentList>
+		</action>
 		<action>
 			<name>SetInterval</name>
 			<argumentList>

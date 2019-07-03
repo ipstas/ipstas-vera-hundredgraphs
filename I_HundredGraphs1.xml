@@ -49,6 +49,26 @@
 		</action>
 		<action>
 			<serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
+			<name>GetAPI</name>
+			<run>
+				return luup.variable_get("urn:hundredgraphs-com:serviceId:HundredGraphs1", "API", lul_device)
+			</run>
+		</action>
+		<action>
+			<serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
+			<name>SetAPI</name>
+			<run>
+				luup.log("HundredGraphs SetAPI called: " .. (lul_settings.newAPIValue or "empty"))
+				local newAPI = lul_settings.newAPIValue
+				if newAPI ~= nil then
+					luup.variable_set("urn:hundredgraphs-com:serviceId:HundredGraphs1", "API", newAPI, lul_device)
+					return true
+				end
+				return false
+			</run>
+		</action>	
+		<action>
+			<serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
 			<name>GetInterval</name>
 			<run>
 				return luup.variable_get("urn:hundredgraphs-com:serviceId:HundredGraphs1", "Interval", lul_device)
