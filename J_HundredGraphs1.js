@@ -1,20 +1,57 @@
 var HundredGraphs = (function (api) {
     var myModule = {};
-    
-    var HG_SID = 'urn:hundredgraphs-com:serviceId:HundredGraphs1';
+
     var uuid = '4d494342-5342-5645-01e6-000002fb37e3';
-    var device = api.getCpanelDeviceId();
+    var device = api.getCpanelDeviceId();    
+    
+    var SID_HG = 'urn:hundredgraphs-com:serviceId:HundredGraphs1';
+    var SID = [
+        {
+            type: 'PM',
+            serviceId: "urn:micasaverde-com:serviceId:EnergyMetering1",
+            serviceVar: "Watts",
+        },
+        {
+            type: 'SES',
+            serviceId: "urn:micasaverde-com:serviceId:SecuritySensor1",
+            serviceVar: "Tripped",
+        },
+        {
+            type:'TMP',
+            serviceId: "urn:upnp-org:serviceId:TemperatureSensor1",
+            serviceVar: "CurrentTemperature",
+        },
+        {
+            type: 'HUM',
+            serviceId: "urn:micasaverde-com:serviceId:HumiditySensor1",
+            serviceVar: "CurrentLevel",
+        },
+    ];
+
+
     
     var hcg_deviceData = [];
     
     function about() {
         try {              
             var html = '<div>This is all about me !</div>';
-            html = html + '<div>HG_SID = ' + HG_SID + '</div>';
+            html = html + '<div>SID_HG = ' + SID_HG + '</div>';
             api.setCpanelContent(html);
         } catch (e) {
             Utils.logError('Error in MyPlugin.about(): ' + e);
         }
+    }
+
+    function resetDevices() {
+        hcg_deviceData = [];
+        api.setDeviceStateVariable(device, SID_HG, "DeviceData", '', 0);
+        console.log('HundredGraphs. DeviceData was reset');
+        var html = "<div> Devices were reset </div>";
+        html += '<p>';
+        html += '<input type="button" value="Show Devices" onClick="HundredGraphs.showDevices()" style="margin-left:60%" />';
+        html += '</p>';
+        api.setCpanelContent(html);
+        getListDevices();
     }
 
     function updateEnabled(idx, object) {
@@ -24,34 +61,57 @@ var HundredGraphs = (function (api) {
 
     function getListDevices(){
         var deviceData = api.getUserData().devices;
-        for (item of deviceData){
-            for (attr of item.states){
-                var checkIt = 'Watts'
-                if (attr.variable == checkIt){
-                    console.log('HundredGraphs found PM device:', item.id, item.name);
-                    var item = {
-                        deviceId: item.id,
-                        key: item.name,
-                        serviceId: 'urn:micasaverde-com:serviceId:EnergyMetering1',
-                        serviceVar: checkIt,
-                        enabled: false
+        try{
+            for (item of deviceData){
+                //console.log('HundredGraphs checking dev:', item.id, item.name, item.states);
+                if (item.id ){
+                    //console.log('HundredGraphs checking item.id:', item.id, item.states);
+                    for (attr of item.states){
+                        for (checkIt of SID) {
+                            //console.log('HundredGraphs checking attr:', item.id, checkIt.serviceId, attr);
+                            if (attr.service == checkIt.serviceId){
+                                if (item.id){
+                                    console.warn('HundredGraphs found', checkIt.serviceVar, 'device:', item.id, item.name);
+                                    var item = {
+                                        type: checkIt.type,
+                                        deviceId: item.id,
+                                        key: item.name,
+                                        serviceId: checkIt.serviceId,
+                                        serviceVar: checkIt.serviceVar,
+                                        enabled: false
+                                    }
+                                    hcg_deviceData.push(item);                                   
+                                }
+
+                            }                    
+                        }
                     }
-                    hcg_deviceData.push(item)
+                    console.log();
                 }
-            }
+            }         
+            hcg_deviceData = hcg_deviceData.sort(function(a, b){
+                var res = a.type == b.type ? 0 : +(a.type > b.type) || -1;
+                //console.log('sort res', res);
+                return res;
+            });   
+        }catch(e){
+            console.error('HundredGraphs getListDevices err:', e);
         }
-        console.log('HundredGraphs found PM devices:', hcg_deviceData.length);
+        console.log('HundredGraphs found PM devices:', hcg_deviceData.length, 'of', deviceData.length);
     }
 
     function unpackDeviceData(device) {
         var deviceData;
         try {
+            console.log('HundredGraphs running unpackDeviceData. initial:', hcg_deviceData);
             hcg_deviceData = [];
 
-            deviceData = api.getDeviceState(device, HG_SID, "DeviceData");
-            if (deviceData === undefined || deviceData === "" || !deviceData) 
+            deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
+            if (deviceData === undefined || deviceData === "" || !deviceData) {
                 return console.log('HundredGraphs empty variable DeviceData:', deviceData);
+            }                    
             deviceData = deviceData.split(';');
+            console.log('HundredGraphs running unpackDeviceData. deviceData:', deviceData);
             for (var i = 0; i < deviceData.length; i++) {
                 // Get the intervals.
                 var item = {};
@@ -63,15 +123,28 @@ var HundredGraphs = (function (api) {
                     var key, val;
                     
                     key = attr[j].split('=')[0];
-                    if (!key) return;
+                    if (!key || key == ' ') return;
                     key = key.trim();
                     val = attr[j].split('=')[1];
-                    if (!val) return;
+                    if (!val) val = false;
                     item[key] = val;
                     //console.log('HG2: ', j, item, attr[j]);
                 }
                 hcg_deviceData.push(item);
             }
+            for (var i = 0; i < hcg_deviceData.length; i++) {
+                if (!hcg_deviceData[i].type){
+                    for (checkIt of SID){
+                        if (hcg_deviceData[i].serviceId == checkIt.serviceId){
+                            hcg_deviceData[i].type = checkIt.type;
+                        }             
+                    }
+                }
+            }
+            hcg_deviceData = hcg_deviceData.sort(function(a, b){
+                var res = a.type == b.type ? 0 : +(a.type > b.type) || -1;
+                return res;
+            }); 
             console.log('HundredGraphs hcg_deviceData: ', hcg_deviceData);
         } catch(e){
             console.error('HundredGraphs err:', e, 'deviceData:', deviceData, 'hcg_deviceData:', hcg_deviceData);
@@ -84,10 +157,10 @@ var HundredGraphs = (function (api) {
         var deviceData = '';
         for (item of hcg_deviceData){
             console.log('{HundredGraphs packDeviceData} item: ', item);
-            deviceData = deviceData + 'deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ';\n ';
+            deviceData = deviceData + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ';';
         }
         console.log('{HundredGraphs packDeviceData} deviceData: ', deviceData);
-        api.setDeviceStateVariable(device, HG_SID, "DeviceData", deviceData, 0);
+        api.setDeviceStateVariable(device, SID_HG, "DeviceData", deviceData, 0);
     }
 
     
@@ -96,6 +169,7 @@ var HundredGraphs = (function (api) {
             var html = '';
 
             unpackDeviceData(device);
+            console.log('HundredGraphs unpacked devs:', hcg_deviceData);
 
             if (hcg_deviceData.length > 0) {
                 // Area to display statuses and error messages.
@@ -105,15 +179,17 @@ var HundredGraphs = (function (api) {
 
                 // Show titles
                 html += '<tr>';
+                html += '<td style="font-weight:bold; text-align:center; width:30%">Type</td>';
                 html += '<td style="font-weight:bold; text-align:center; width:30%">Device #</td>';
                 html += '<td style="font-weight:bold; text-align:center; width:30%">Device name</td>';
-                html += '<td style="font-weight:bold; text-align:center; width:10%"></td>';
+                html += '<td style="font-weight:bold; text-align:center; width:10%">Enabled</td>';
                 html += '</tr>';
 
                 // Show device list
                 for (var i = 0; i < hcg_deviceData.length; i++) {
-                    html += '<tr>';
-                    html += '<td style="padding-left:5%">' + hcg_deviceData[i].deviceId + '</td>';
+                    html += '<tr>'; 
+                    html += '<td style="padding-left:5%">' + hcg_deviceData[i].type + '</td>';
+                    html += '<td style="">' + hcg_deviceData[i].deviceId + '</td>';
                     html += '<td style="">' + api.getDisplayedDeviceName(hcg_deviceData[i].deviceId) + '</td>';
                     html += '<td><input type="checkbox" value="' + hcg_deviceData[i].devNum + '" onClick="HundredGraphs.updateEnabled(' + i + ', this)" ' + hcg_deviceData[i].enabled + ' style="margin-left:42%" /></td>';
                     html += '</td>';
@@ -127,18 +203,21 @@ var HundredGraphs = (function (api) {
 
                 // Display the 'Update' button
                 html += '<tr>';
-                html += '<td colspan="3"><input type="button" value="Update" onClick="HundredGraphs.packDeviceData()" style="margin-left:60%" /></td>';
+                html += '<td colspan="3"><input type="button" value="Save" onClick="HundredGraphs.packDeviceData()" style="margin-left:60%" /></td>';
                 html += '</tr>';
+                html += '<p>';
+                html += '<input type="button" value="Reset Devices" onClick="HundredGraphs.resetDevices()" style="margin-left:60%" />';
+                html += '</p>';  
 
                 html += '</table>';
             } else {
-                var deviceData = api.getDeviceState(device, HG_SID, "DeviceData");
+                var deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
                 getListDevices();
                 deviceData = deviceData || 'empty';
                 console.log('HG3: ', device, 'hcg:', hcg_deviceData, 'luldata:', deviceData );
                 html += '<p style="margin-left:10px; margin-top:10px">No power reporting devices for ' + device + '</p>';
                 html += '<p style="margin-left:10px; margin-top:10px">DeviceData: ' + hcg_deviceData.length + ' ' + deviceData + '</p>';
-
+                 
                 html += '<p>';
                 html += '<input type="button" value="Get Devices" onClick="HundredGraphs.packDeviceData()" style="margin-left:60%" />';
                 html += '</p>';                   
@@ -157,7 +236,8 @@ var HundredGraphs = (function (api) {
         getListDevices: getListDevices,
         updateEnabled: updateEnabled,
         showDevices: showDevices,
-        packDeviceData: packDeviceData
+        packDeviceData: packDeviceData,
+        resetDevices: resetDevices
     };
     return myModule;
 })(api);
