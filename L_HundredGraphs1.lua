@@ -12,6 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
+local version = '7.4.2019'
 
 local SID = {
 	["HG"] = "urn:hundredgraphs-com:serviceId:HundredGraphs1",
@@ -102,7 +103,7 @@ local VARIABLES2 = {
 
 
 -- You shouldn't need to change anything below this line --
-local version = '6.19.2019'
+
 local updateInterval = 600
 local interval = 600
 
