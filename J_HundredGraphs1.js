@@ -1,5 +1,6 @@
 var HundredGraphs = (function (api) {
     var myModule = {};
+    var version = "1.4";
 
     var uuid = '4d494342-5342-5645-01e6-000002fb37e3';
     var device = api.getCpanelDeviceId();    
@@ -34,8 +35,9 @@ var HundredGraphs = (function (api) {
     
     function about() {
         try {              
-            var html = '<div>This is all about me !</div>';
-            html = html + '<div>SID_HG = ' + SID_HG + '</div>';
+            var html = '<div>Read the full docs at <a href="https://www.hundredgraphs.com/apidocs" target=_blank>HundredGraphs API</a></div>';
+            html += '<div>Grab your API KEY from <a href="https://www.hundredgraphs.com/settings" target=_blank>HG Settings</a></div>';
+            html += '<div>SID_HG = ' + SID_HG + '</div>';
             api.setCpanelContent(html);
         } catch (e) {
             Utils.logError('Error in MyPlugin.about(): ' + e);
@@ -44,7 +46,7 @@ var HundredGraphs = (function (api) {
 
     function resetDevices() {
         hcg_deviceData = [];
-        api.setDeviceStateVariable(device, SID_HG, "DeviceData", '', 0);
+        api.setDeviceStatePersistent(device, SID_HG, "DeviceData", '', 0);
         console.log('HundredGraphs. DeviceData was reset');
         var html = "<div> Devices were reset </div>";
         html += '<p>';
@@ -103,12 +105,12 @@ var HundredGraphs = (function (api) {
     function unpackDeviceData(device) {
         var deviceData;
         try {
-            console.log('HundredGraphs running unpackDeviceData. initial:', hcg_deviceData);
+            console.log('HundredGraphs running unpackDeviceData for:', device, 'initial:', hcg_deviceData);
             hcg_deviceData = [];
 
             deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
             if (deviceData === undefined || deviceData === "" || !deviceData) {
-                return console.log('HundredGraphs empty variable DeviceData:', deviceData);
+                return console.log('HundredGraphs empty variable for:', device, 'DeviceData:', deviceData, 'dev2:', api.getDeviceState(device, SID_HG, "DeviceData"));
             }                    
             deviceData = deviceData.split(';');
             console.log('HundredGraphs running unpackDeviceData. deviceData:', deviceData);
@@ -160,14 +162,14 @@ var HundredGraphs = (function (api) {
             deviceData = deviceData + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ';';
         }
         console.log('{HundredGraphs packDeviceData} deviceData: ', deviceData);
-        api.setDeviceStateVariable(device, SID_HG, "DeviceData", deviceData, 0);
+        api.setDeviceStatePersistent(device, SID_HG, "DeviceData", deviceData, 0);
     }
 
     
     function showDevices() {
         try {
             var html = '';
-
+            device = device || api.getCpanelDeviceId();
             unpackDeviceData(device);
             console.log('HundredGraphs unpacked devs:', hcg_deviceData);
 
