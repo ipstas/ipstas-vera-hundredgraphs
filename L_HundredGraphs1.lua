@@ -33,7 +33,7 @@ local SRV = {
 local pdev
 
 -- API Key
--- local API_KEY = "P8tRMZ6t" -- grab that KEY from your settings on https://www.hundredgraphs.com/settings
+-- local API_KEY = "AABBCCDD" -- grab that KEY from your settings on https://www.hundredgraphs.com/settings
 local API_KEY
 local NODE_ID = 1
 local TOTAL = 'Total'
