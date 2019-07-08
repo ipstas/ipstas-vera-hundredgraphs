@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '1.4'
+local version = '1.5'
 
 local SID = {
 	["HG"] = "urn:hundredgraphs-com:serviceId:HundredGraphs1",
@@ -196,7 +196,7 @@ function PackDeviceDataHG()
 		deviceData = deviceData .. item .. '; '
 	end
 	Log( " New device data: " .. deviceData )
-	if (deviceData == '') then return end
+	if (deviceData == '') then return deviceData end
 	luup.variable_set( SID.HG, "DeviceData", deviceData, pdev )
 	return deviceData
 end
