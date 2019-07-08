@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '1.5'
+local version = '1.6'
 
 local SID = {
 	["HG"] = "urn:hundredgraphs-com:serviceId:HundredGraphs1",
@@ -106,6 +106,7 @@ local VARIABLES2 = {
 
 local updateInterval = 600
 local interval = 600
+local httpRes = 0
 
 local count = 0
 
@@ -293,10 +294,9 @@ function HGTimer()
 	PopulateVars()
 	if (count > 0) then
 		code = SendData()
-		code = tonumber(code) 
 	end
 
-	if (code == 200) then
+	if (code == 200 and httpRes ~= 200) then
 		luup.variable_set( SID.HG, "Enabled", 1, pdev )
 	elseif (code == 204) then
 		luup.variable_set( SID.HG, "Enabled", 0, pdev )
@@ -312,8 +312,12 @@ function HGTimer()
 		--interval = 100000		
 	end
 	local res = luup.call_timer("HGTimer", 1, interval, "", interval)
+
+	if (code ~= httpRes) then
+		httpRes = code
+		luup.variable_set( SID.HG, "lastRun", code, pdev )
+	end
 	
-	luup.variable_set( SID.HG, "lastRun", code, pdev )
 	if (DEBUG) then Log(' next in ' .. interval) end
 	return true
 end
