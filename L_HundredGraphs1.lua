@@ -117,7 +117,9 @@ http.TIMEOUT = 3
 
 local BASE_URL = "https://www.hundredgraphs.com/api?key=" 
 --local BASE_URL = "http://dev.hundredgraphs.com/api?key=" 
-local Log = function (text) luup.log('[HundredGraphs Logger] ' .. (text or "empty")) end
+local Log = function (text) 
+	luup.log('[HundredGraphs Logger] ' .. (text or "empty")) 
+end
 
 local function TableInsert(item)
 	Log( " Inserting item data: " .. item )
