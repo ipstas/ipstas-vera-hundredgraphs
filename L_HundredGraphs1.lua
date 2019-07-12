@@ -116,7 +116,8 @@ local http = require('socket.http')
 https.TIMEOUT = 3
 http.TIMEOUT = 3
 
-local BASE_URL = "https://www.hundredgraphs.com/api?key=" 
+local SRV_URL = "https://www.hundredgraphs.com/api?key=" 
+Local BASE_URL
 --local BASE_URL = "http://dev.hundredgraphs.com/api?key=" 
 local Log = function (text) 
 	luup.log('[HundredGraphs Logger] ' .. (text or "empty")) 
@@ -288,7 +289,7 @@ function HGTimer()
 		if (DEBUG) then Log(' wrong API key: ' .. (API_KEY or "empty")) end
 		return
 	else
-		BASE_URL = BASE_URL .. API_KEY
+		BASE_URL = SRV_URL .. API_KEY
 	end	
 
 	PopulateVars()
@@ -368,7 +369,7 @@ function startup(lul_device)
 	else
 		Log('Initial API_KEY: ' .. API_KEY)
 	end	
-	BASE_URL = "https://www.hundredgraphs.com/api?key=" .. API_KEY
+	BASE_URL = SRV_URL .. API_KEY
 
 	_G.UpdateVariablesHG = UpdateVariablesHG
 	_G.UpdateAPIHG = UpdateAPIHG
