@@ -117,7 +117,7 @@ https.TIMEOUT = 3
 http.TIMEOUT = 3
 
 local SRV_URL = "https://www.hundredgraphs.com/api?key=" 
-Local BASE_URL
+Local BASE_URL = ""
 --local BASE_URL = "http://dev.hundredgraphs.com/api?key=" 
 local Log = function (text) 
 	luup.log('[HundredGraphs Logger] ' .. (text or "empty")) 
