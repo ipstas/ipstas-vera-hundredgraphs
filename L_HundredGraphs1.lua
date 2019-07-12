@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '1.6'
+local version = '1.7'
 
 local SID = {
 	["HG"] = "urn:hundredgraphs-com:serviceId:HundredGraphs1",
@@ -288,7 +288,7 @@ function HGTimer()
 		if (DEBUG) then Log(' wrong API key: ' .. (API_KEY or "empty")) end
 		return
 	else
-		BASE_URL = "http://dev.hundredgraphs.com/api?key=" .. API_KEY
+		BASE_URL = BASE_URL .. API_KEY
 	end	
 
 	PopulateVars()
