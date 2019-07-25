@@ -318,16 +318,17 @@ local function SendData()
 	local url2 = BASE_URL .. parameters2
 	if (DEBUG) then Log(" sending data: " .. parameters) end
 	if (DEBUG) then Log(" sending Ext data: " .. dataExt) end
-	local res, code, response_headers, status = https.request{
-		url = url,
-		protocol = "tlsv1_2",
-	}
+
+	-- local res, code, response_headers, status = https.request{
+		-- url = url,
+		-- protocol = "tlsv1_2",
+	-- }
 
 	local status2 = sendRequest(dataExt)
 	
 	ResetData()
 	Log(" sent data status: " .. status .. " ext: " .. status2 .. '\n\n')
-	status = tonumber(status)
+	status = tonumber(status2)
 	if (status ~= 200) then
 		Log('Code: ' .. status .. ' url: ' .. url)
 	end
