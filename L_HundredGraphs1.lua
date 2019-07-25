@@ -47,6 +47,7 @@ local NODE_ID = 1
 local TOTAL = 'Total'
 local SRV_URL = "https://www.hundredgraphs.com/api?key=" 
 local SRV_URL_POST = "http://dev.hundredgraphs.com/hook/" 
+SRV_URL_POST = "https://www.hundredgraphs.com/hook/" 
 
 -- Log debug messages
 local DEBUG = true -- if you want to see results in the log on Vera 
