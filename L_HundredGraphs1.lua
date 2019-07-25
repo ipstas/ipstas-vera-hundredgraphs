@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '1.8'
+local version = '2.0'
 
 local ltn12 = require("ltn12")
 local library	= require "L_HundredGraphsLibrary"

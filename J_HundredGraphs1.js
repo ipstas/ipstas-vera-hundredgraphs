@@ -1,6 +1,6 @@
 var HundredGraphs = (function (api) {
     var myModule = {};
-    var version = "1.7";
+    var version = "2.0";
 
     var uuid = '4d494342-5342-5645-01e6-000002fb37e3';
     var device = api.getCpanelDeviceId();    
