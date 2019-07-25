@@ -12,7 +12,15 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '1.7'
+local version = '1.8'
+
+local ltn12 = require("ltn12")
+local library	= require "L_HundredGraphsLibrary"
+--local cli   	= library.cli()
+--local gviz  	= library.gviz()
+local json  	= library.json() 
+
+luup.log('HundredGraphs json version' .. (json.version or 'empty'))
 
 local SID = {
 	["HG"] = "urn:hundredgraphs-com:serviceId:HundredGraphs1",
@@ -37,6 +45,8 @@ local pdev
 local API_KEY
 local NODE_ID = 1
 local TOTAL = 'Total'
+local SRV_URL = "https://www.hundredgraphs.com/api?key=" 
+local SRV_URL_POST = "http://dev.hundredgraphs.com/hook/" 
 
 -- Log debug messages
 local DEBUG = true -- if you want to see results in the log on Vera 
@@ -45,7 +55,9 @@ local remotedebug = false -- remote log, you probably don't need that
 -- local lastFullUpload = 0
 
 local items = {} -- contains items: { time, deviceId, value }
+local itemsExtended = {} -- contains items: { time, deviceId, value }
 local g_deviceData = {}
+local dataTextExt = 'empty'
 
 local function cDiff( dev1, dev2, svc, var )
 	-- Log(" getting calculate: " .. dev1 .. dev2 .. svc .. var)
@@ -116,27 +128,40 @@ local http = require('socket.http')
 https.TIMEOUT = 3
 http.TIMEOUT = 3
 
-local SRV_URL = "https://www.hundredgraphs.com/api?key=" 
+
 local BASE_URL = ""
---local BASE_URL = "http://dev.hundredgraphs.com/api?key=" 
+
 local Log = function (text) 
-	luup.log('[HundredGraphs Logger] ' .. (text or "empty")) 
+	luup.log('[HundredGraphs2 Logger] ' .. (text or "empty")) 
 end
 
 local function TableInsert(item)
 	Log( " Inserting item data: " .. item )
 end
 
-local function dump(o)
-	if type(o) == 'table' then
+local function dumpTable(t)
+	if type(t) == 'table' then
 		local s = '{ '
-		for k,v in pairs(o) do
+		for k,v in pairs(t) do
 			if type(k) ~= 'number' then k = '"'..k..'"' end
-			s = s .. '['..k..'] = ' .. dump(v) .. ','
+			s = s .. '['..k..'] = ' .. dumpTable(v) .. ','
 		end
 		return s .. '} '
 	else
-		return tostring(o)
+		return tostring(t)
+	end
+end
+
+local function dumpJson(t)
+	if type(t) == 'table' then
+		local s = '{ '
+		for k,v in pairs(t) do
+			if type(k) ~= 'number' then k = '"'..k..'"' end
+			s = s .. ''..k..': ' .. dumpJson(v) .. ','
+		end
+		return s .. '} '
+	else
+		return tostring(t)
 	end
 end
 
@@ -163,7 +188,7 @@ local function split(str)
         end
 		table.insert(tbl, item)
 	end
-	--Log(" End Splitting: " .. dump(tbl)) 
+	--Log(" End Splitting: " .. dumpTable(tbl)) 
 	--Log('----')
     
 	return tbl	
@@ -174,8 +199,8 @@ function UpdateVariablesHG()
 	Log( " Watched device data: " .. (deviceData or "empty"))
 	if (deviceData == nil or deviceData == '') then return end
 	VARIABLES = split(deviceData)
-	Log( " Updated VARIABLES: " .. dump(VARIABLES))
-	-- Log( " Updated VARIABLES2: " .. dump(VARIABLES2))
+	Log( " Updated VARIABLES: " .. dumpTable(VARIABLES))
+	-- Log( " Updated VARIABLES2: " .. dumpTable(VARIABLES2))
 end
 
 function UpdateAPIHG()
@@ -207,21 +232,28 @@ end
 
 local function SerializeData()
 	local dataText = "{" .. table.concat(items, ",") .. "}"
-	dataText = string.gsub(dataText, " ", "_")
-	return dataText
+	if (DEBUG) then Log(" SerializeData: " .. dataText) end
+	dataTextExt = json.encode(itemsExtended)
+	dataText = string.gsub(dataText, " ", "_")	
+	--dataTextExt = string.gsub(dataTextExt, " ", "_")
+	if (DEBUG) then Log(" SerializeData Ext: " .. dataTextExt) end
+	return dataText, dataTextExt
 end
 
 local function ResetData()
 	items = {}
+	itemsExtended = {}
 end
 
-local function AddPair(key, value)
+local function AddPair(key, value, var, id)
 	if (key == nil or value == nil) then
 		Log(' AddPair nil! key: ' .. (key or "empty") .. ' value: ' .. (value or "empty"))
 		return
 	end
 	local item = string.format("%s:%s", key, value)
+	local itemExtended = {['device'] = key, ['value'] = value, ['type'] = var, ['id'] = id}
 	items[#items + 1] = item
+	itemsExtended[#itemsExtended + 1] = itemExtended	
 end
 
 local function PopulateVars()
@@ -241,30 +273,64 @@ local function PopulateVars()
 				total = total + val
 			end
 			val = tostring(val)
-			AddPair(v.key, val)
+			AddPair(v.key, val, v.serviceVar, v.deviceId)
 			count = count + 1
 		end
 	end
-	AddPair(TOTAL, total)
+	AddPair(TOTAL, total, 'Watts', 'Total')
 	if (DEBUG) then Log(" collected vars: " .. count) end
+	-- if (DEBUG) then Log(" collected Ext vars: " .. #itemsExtended .. ' table: ' .. json.encode(itemsExtended)) end
+	return count
 end
 
+local function sendRequest(payload)
+	local path = SRV_URL_POST
+	payload = '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"1","events":'..payload..'}' 	
+	--Log('payload: ' .. payload)
+	local response_body = {}
+
+	local res, code, response_headers, status = https.request{
+		url = path,
+		method = "POST",
+		headers = {
+			--["Authorization"] = "Maybe you need an Authorization header?", 
+			["Content-Type"] = "application/json",
+			["Content-Length"] = payload:len()
+		},
+		source = ltn12.source.string(payload),
+		sink = ltn12.sink.table(response_body)
+	}
+	--luup.task('Response: = ' .. table.concat(response_body) .. ' code = ' .. code .. '   status = ' .. status,1,'Sample POST request with JSON data',-1)
+	luup.log(status)
+	luup.log(table.concat(response_body))
+	Log('Post response code = ' .. code .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat(response_body))
+	return (status or '0')
+end	
+	
 local function SendData()
-	local data = SerializeData()
+	if (DEBUG) then Log(" Start sending data ") end
+	local data, dataExt = SerializeData()
+	-- if (DEBUG) then Log(" Received SerializeData data for sending: " .. data .. '\nExt: ' .. dataExt) end
 	local parameters = "&debug=" .. tostring(remotedebug) .. "&version=" .. tostring(version) .. "&node=" .. tostring(NODE_ID) .. "&json=" .. data
+	local parameters2 = "&debug=" .. tostring(remotedebug) .. "&version=" .. tostring(version) .. "&node=" .. tostring(NODE_ID) .. "&json=" .. dataExt
 	local url = BASE_URL .. parameters
+	local url2 = BASE_URL .. parameters2
 	if (DEBUG) then Log(" sending data: " .. parameters) end
-	local _, code = https.request{
+	if (DEBUG) then Log(" sending Ext data: " .. dataExt) end
+	local res, code, response_headers, status = https.request{
 		url = url,
 		protocol = "tlsv1_2",
 	}
+
+	local status2 = sendRequest(dataExt)
+	
 	ResetData()
-	Log(" sent data status: " .. code)
-	code = tonumber(code)
-	if (code ~= 200) then
-		Log('Code: ' .. code .. ' url: ' .. url)
+	Log(" sent data status: " .. status .. " ext: " .. status2 .. '\n\n')
+	status = tonumber(status)
+	if (status ~= 200) then
+		Log('Code: ' .. status .. ' url: ' .. url)
 	end
-	return code
+	return status
 end
 
 function HGTimerOnce()
@@ -272,9 +338,9 @@ function HGTimerOnce()
 	return SendData()
 end
 
-function HGTimer()
-	local code = ''
-	interval = luup.variable_get( SID.HG, "Interval", pdev )
+function HGTimer(interval)
+	local status = ''
+	interval = interval or luup.variable_get( SID.HG, "Interval", pdev )
 	if (interval == nil) then
 		interval = updateInterval
 		luup.variable_set( SID.HG, "Interval", interval, pdev )
@@ -286,37 +352,37 @@ function HGTimer()
 	if (API_KEY == nil or API_KEY == 'empty' ) then
 		interval = 600
 		luup.call_timer("HGTimer", 1, interval, "", interval)	
-		if (DEBUG) then Log(' wrong API key: ' .. (API_KEY or "empty")) end
+		if (DEBUG) then Log(' wrong API key: ' .. (API_KEY or "empty") .. ' for dev #' .. (pdev or 'empty')) end
 		return
 	else
 		BASE_URL = SRV_URL .. API_KEY
 	end	
 
-	PopulateVars()
+	count = PopulateVars()
 	if (count > 0) then
-		code = SendData()
+		status = SendData()
 	end
 
-	if (code == 200 and httpRes ~= 200) then
+	if (status == 200 and httpRes ~= 200) then
 		luup.variable_set( SID.HG, "Enabled", 1, pdev )
-	elseif (code == 204) then
+	elseif (status == 204) then
 		luup.variable_set( SID.HG, "Enabled", 0, pdev )
 		Log(' server returned 204, no data, HGTimer was stopped, check your lua file ') 
 		interval = 100000
-	elseif (code == 401) then
+	elseif (status == 401) then
 		luup.variable_set( SID.HG, "Enabled", 0, pdev )
 		Log(' server returned 401, your API key is wrong, HGTimer was stopped, check your lua file ') 
 		interval = 100000
 	else
 		luup.variable_set( SID.HG, "Enabled", 0, pdev )
-		Log(' unknown send code was returned: ' .. code) 
+		Log(' unknown send status was returned: ' .. status) 
 		--interval = 100000		
 	end
 	local res = luup.call_timer("HGTimer", 1, interval, "", interval)
 
-	if (code ~= httpRes) then
-		httpRes = code
-		luup.variable_set( SID.HG, "lastRun", code, pdev )
+	if (status ~= httpRes) then
+		httpRes = status
+		luup.variable_set( SID.HG, "lastRun", status, pdev )
 	end
 	
 	if (DEBUG) then Log(' next in ' .. interval) end
@@ -327,6 +393,7 @@ _G.HGTimerOnce = HGTimerOnce
 _G.HGTimer = HGTimer
 
 function startup(lul_device)
+	lul_device = lul_device or 507
 	pdev = tonumber(lul_device)
 
 	local deviceData = luup.variable_get( SID.HG, "DeviceData", pdev ) or ""
@@ -349,12 +416,12 @@ function startup(lul_device)
 				table.insert(VARIABLES, item)				
 			end
 		end
-		Log(' Created initial VARIABLES: ' .. dump(VARIABLES))
+		Log(' Created initial VARIABLES: ' .. dumpTable(VARIABLES))
 		deviceData = PackDeviceDataHG()
 		Log(' Created initial deviceData: ' .. deviceData)
 	else
 		UpdateVariablesHG()
-		luup.log("HundredGraphs: existing deviceData: " .. deviceData .. " VARS: " .. dump(VARIABLES))
+		luup.log("HundredGraphs: existing deviceData: " .. deviceData .. " VARS: " .. dumpTable(VARIABLES))
 	end
 
 	-- UpdateDeviceDataHG()
@@ -387,5 +454,7 @@ end
 
 if (DEBUG) then Log(" *********************************************** ") end
 if (DEBUG) then Log(" Started with version " .. version) end
+
+-- startup()
 
 return true
