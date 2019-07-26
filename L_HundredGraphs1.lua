@@ -309,8 +309,9 @@ local function sendRequestHook(payload)
 	local res, code, code1, code2, response_headers, status
 
 	local enabled = luup.variable_get(SID.HG, "Enabled", pdev) 
-	Log(' enabled: ' .. (enabled or 0))
+	
 	if enabled == 1 or enabled == '1' then
+		Log(' enabled: ' .. (enabled or 0))
 		res, code1, response_headers, status = http.request{
 			url = SRV_URL_POST,
 			method = "POST",
@@ -325,8 +326,9 @@ local function sendRequestHook(payload)
 	end
 	
 	local devEnabled = luup.variable_get(SID.HG, "Dev", pdev) 
-	Log(' dev: ' .. (devEnabled or empty))
+	
 	if devEnabled == 1 or devEnabled == '1' then
+		Log(' dev: ' .. (devEnabled or empty))
 		response_body2 = {}
 		res, code2, response_headers, status = https.request{
 			url = DEV_URL_POST,
@@ -374,8 +376,8 @@ local function SendData()
 	local code = sendRequestHook(dataExt)	
 	
 	-- Log(" sent data code: " .. code .. '\n\n')
-	code = tonumber(code)
-	if (code ~= 200) then
+	code = tonumber(code)		
+	if (code ~= nil and code ~= 200) then
 		Log('Status: ' .. (code or 'empty') .. ' url: ' .. SRV_URL_POST)
 	end
 	ResetData()
@@ -404,31 +406,33 @@ function HGTimer(interval)
 		-- interval = 600
 		-- luup.call_timer("HGTimer", 1, interval, "", interval)	
 		if (DEBUG) then Log('Switched off!!! wrong API key: ' .. (API_KEY or "empty") .. ' for dev #' .. (pdev or 'empty')) end
-		luup.variable_set( SID.HG, "Enabled", 0, pdev )
-		luup.variable_set( SID.HG, "running", 0, pdev )
+		--luup.variable_set( SID.HG, "Enabled", 0, pdev )
+		--luup.variable_set( SID.HG, "running", 0, pdev )
+		luup.call_timer("HGTimer", 1, interval, "", interval)
 		return
 	else
 		BASE_URL = SRV_URL .. API_KEY
 	end	
 	
-	if enabled == 1 or devEnabled == 1 or enabled == '1' or devEnabled == '1' then
-		luup.log(' ')
-		if (DEBUG) then Log('Switched on. Enabled: ' .. (enabled or 'empty') .. ' Dev: ' .. (devEnabled or 'empty') .. ' for dev #' .. (pdev or 'empty')) end		
-	else
-		-- interval = 600
-		-- luup.call_timer("HGTimer", 1, interval, "", interval)	
-		if (DEBUG) then Log('Switched off!!! Enabled: ' .. (enabled or 'empty') .. ' Dev: ' .. (devEnabled or 'empty') .. ' for dev #' .. (pdev or 'empty')) end
-		luup.variable_set( SID.HG, "running", 0, pdev )
-		luup.call_timer("HGTimer", 1, interval, "", interval)
-		--return
-	end	
+	-- if enabled == 1 or devEnabled == 1 or enabled == '1' or devEnabled == '1' then
+		-- luup.log(' ')
+		-- if (DEBUG) then Log('Switched on. Enabled: ' .. (enabled or 'empty') .. ' Dev: ' .. (devEnabled or 'empty') .. ' for dev #' .. (pdev or 'empty')) end		
+	-- else
+		-- if (DEBUG) then Log('Switched off!!! Enabled: ' .. (enabled or 'empty') .. ' Dev: ' .. (devEnabled or 'empty') .. ' for dev #' .. (pdev or 'empty')) end
+		
+		-- luup.call_timer("HGTimer", 1, interval, "", interval)
+		-- luup.variable_set( SID.HG, "running", 0, pdev )
+		-- return 
+	-- end	
 
 	count = PopulateVars()
 	if (count > 0) then
 		code = SendData()
 	end
 
-	if (code == 204) then
+	if (code == nil) then
+		local nothing
+	elseif (code == 204) then
 		--luup.variable_set( SID.HG, "Enabled", 0, pdev )
 		Log(' server returned 204, no data, HGTimer was stopped, check your lua file ') 
 		interval = 100000
