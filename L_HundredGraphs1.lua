@@ -426,7 +426,7 @@ function HGTimer(interval)
 		-- return 
 	-- end	
 
-	if enabled == 1 or devEnabled == 1 then
+	if enabled == 1 or devEnabled == 1 or enabled == '1' or devEnabled == '1' then
 		count = PopulateVars()
 		if (count > 0) then
 			code = SendData()
