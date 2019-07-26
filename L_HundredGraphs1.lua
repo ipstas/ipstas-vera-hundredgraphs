@@ -196,7 +196,10 @@ local function split(str)
  end
 
 function UpdateStartHG()
-	HGTimer()
+	local last = luup.variable_get( SID.HG, "running", pdev )
+	if (last == 0) then
+		HGTimer()
+	end
 end
 
 function UpdateVariablesHG()
@@ -400,6 +403,7 @@ function HGTimer(interval)
 		-- interval = 600
 		-- luup.call_timer("HGTimer", 1, interval, "", interval)	
 		if (DEBUG) then Log('Switched off!!! Enabled: ' .. (enabled or 'empty') .. ' Dev: ' .. (devEnabled or 'empty') .. ' for dev #' .. (pdev or 'empty')) end
+		luup.variable_set( SID.HG, "running", 0, pdev )
 		return
 	end	
 
@@ -429,6 +433,7 @@ function HGTimer(interval)
 	end
 	
 	if (DEBUG) then Log(' next in ' .. interval) end
+	luup.variable_set( SID.HG, "running", 1, pdev )
 	return true
 end
 
