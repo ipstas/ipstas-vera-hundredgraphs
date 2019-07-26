@@ -196,10 +196,15 @@ local function split(str)
  end
 
 function UpdateStartHG()
-	Log(' switch was switched ')
+	
 	local last = luup.variable_get( SID.HG, "running", pdev )
+	Log(' switch was switched. If running: ' .. last)
 	if (last == 0) then
-		if (luup.variable_get( SID.HG, "Enabled", pdev ) == 1 or luup.variable_get( SID.HG, "Dev", pdev ) == 1) then
+		local enabled = luup.variable_get( SID.HG, "Enabled", pdev )
+		local dev = luup.variable_get( SID.HG, "Dev", pdev )
+		Log('running: ' .. last .. ', enabled: ' .. enabled .. ', dev enabled: ' .. dev)
+		if (enabled == 1 or dev == 1) then
+			Log('Starting HGTimer')
 			HGTimer()
 		end
 	end
