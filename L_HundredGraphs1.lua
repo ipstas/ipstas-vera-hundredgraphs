@@ -324,6 +324,9 @@ local function sendRequestHook(payload)
 			sink = ltn12.sink.table(response_body1)
 		}
 		Log('Post response code = ' .. code1 .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat(response_body1) .. '\n')
+		if (code1 ~= 200) then
+			Log('Prod Payload was: ' .. payload)
+		end
 	end
 	
 	local devEnabled = luup.variable_get(SID.HG, "Dev", pdev) 
@@ -342,8 +345,8 @@ local function sendRequestHook(payload)
 			sink = ltn12.sink.table(response_body2)
 		}	
 		Log('Post response DEV code = ' .. code2 .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat((response_body2 or {})) .. '\n')
-		if (code ~= 200) then
-			Log('Payload was: ' .. payload)
+		if (code2 ~= 200) then
+			Log('Dev Payload was: ' .. payload)
 		end
 	end
 	
