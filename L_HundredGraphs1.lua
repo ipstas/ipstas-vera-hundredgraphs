@@ -47,7 +47,7 @@ local NODE_ID = 1
 local TOTAL = 'Total'
 local SRV_URL = "https://www.hundredgraphs.com/api?key=" 
 local DEV_URL_POST = "http://dev.hundredgraphs.com/hook/" 
-local SRV_URL_POST = "https://www.hundredgraphs.com/hook/" 
+local SRV_URL_POST = "http://www.hundredgraphs.com/hook/" 
 
 -- Log debug messages
 local DEBUG = true -- if you want to see results in the log on Vera 
@@ -126,8 +126,8 @@ local count = 0
 local p = print
 local https = require "ssl.https"
 local http = require('socket.http')
-https.TIMEOUT = 3
-http.TIMEOUT = 3
+https.TIMEOUT = 5
+http.TIMEOUT = 60
 
 
 local BASE_URL = ""
@@ -196,9 +196,12 @@ local function split(str)
  end
 
 function UpdateStartHG()
+	Log(' switch was switched ')
 	local last = luup.variable_get( SID.HG, "running", pdev )
 	if (last == 0) then
-		HGTimer()
+		if (luup.variable_get( SID.HG, "Enabled", pdev ) == 1 or luup.variable_get( SID.HG, "Dev", pdev ) == 1) then
+			HGTimer()
+		end
 	end
 end
 
@@ -291,47 +294,49 @@ local function PopulateVars()
 	return count
 end
 
-local function sendRequest(payload)
-	local path = SRV_URL_POST
+local function sendRequestHook(payload)
+
+	if (DEBUG) then Log(" sending Ext data: " .. payload) end
+	
 	payload = '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"1","events":'..payload..'}' 	
-	--Log('payload: ' .. payload)
-	local response_body = {}
+	local response_body1 = {} 
+	local response_body2 = {}
 	local res, code, code1, code2, response_headers, status
 
 	local enabled = luup.variable_get(SID.HG, "Enabled", pdev) 
 	Log(' enabled: ' .. (enabled or 0))
 	if enabled == 1 or enabled == '1' then
-		res, code1, response_headers, status = https.request{
+		res, code1, response_headers, status = http.request{
 			url = SRV_URL_POST,
 			method = "POST",
 			headers = {
-				--["Authorization"] = "Maybe you need an Authorization header?", 
 				["Content-Type"] = "application/json",
 				["Content-Length"] = payload:len()
 			},
 			source = ltn12.source.string(payload),
-			sink = ltn12.sink.table(response_body)
+			sink = ltn12.sink.table(response_body1)
 		}
-		luup.log(status)
-		luup.log(table.concat(response_body))
-		Log('Post response code = ' .. code1 .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat(response_body))
+		Log('Post response code = ' .. code1 .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat(response_body1) .. '\n')
 	end
 	
 	local devEnabled = luup.variable_get(SID.HG, "Dev", pdev) 
 	Log(' dev: ' .. (devEnabled or empty))
 	if devEnabled == 1 or devEnabled == '1' then
+		response_body2 = {}
 		res, code2, response_headers, status = https.request{
 			url = DEV_URL_POST,
 			method = "POST",
 			headers = {
-				--["Authorization"] = "Maybe you need an Authorization header?", 
 				["Content-Type"] = "application/json",
 				["Content-Length"] = payload:len()
 			},
 			source = ltn12.source.string(payload),
 			sink = ltn12.sink.table(response_body2)
 		}	
-		Log('Post response DEV: ' .. DEV_URL_POST .. ' code = ' .. code2 .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat((response_body or {})))
+		Log('Post response DEV code = ' .. code2 .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat((response_body2 or {})) .. '\n')
+		if (code ~= 200) then
+			Log('Payload was: ' .. payload)
+		end
 	end
 	
 	code = code1 or code2
@@ -340,24 +345,28 @@ local function sendRequest(payload)
 
 	return code
 end	
+
+local function sendRequestOld(data)
+	
+	local parameters = "&debug=" .. tostring(remotedebug) .. "&version=" .. tostring(version) .. "&node=" .. tostring(NODE_ID) .. "&json=" .. data
+	local url = BASE_URL .. parameters
+	if (DEBUG) then Log(" sending data: " .. parameters) end
+	local res, code, response_headers, status = https.request{
+		url = url,
+		protocol = "tlsv1_2",
+	}
+	
+	Log('Status Old: ' .. (code or 'empty') .. ' url: ' .. BASE_URL .. '\n')
+
+	return code
+end	
 	
 local function SendData()
 	if (DEBUG) then Log(" Start sending data ") end
 	local data, dataExt = SerializeData()
-	-- if (DEBUG) then Log(" Received SerializeData data for sending: " .. data .. '\nExt: ' .. dataExt) end
-	local parameters = "&debug=" .. tostring(remotedebug) .. "&version=" .. tostring(version) .. "&node=" .. tostring(NODE_ID) .. "&json=" .. data
-	local parameters2 = "&debug=" .. tostring(remotedebug) .. "&version=" .. tostring(version) .. "&node=" .. tostring(NODE_ID) .. "&json=" .. dataExt
-	local url = BASE_URL .. parameters
-	local url2 = BASE_URL .. parameters2
-	if (DEBUG) then Log(" sending data: " .. parameters) end
-	if (DEBUG) then Log(" sending Ext data: " .. dataExt) end
 
-	-- local res, code, response_headers, status = https.request{
-		-- url = url,
-		-- protocol = "tlsv1_2",
-	-- }
-
-	local code = sendRequest(dataExt)	
+	-- sendRequestOld(data)
+	local code = sendRequestHook(dataExt)	
 	
 	-- Log(" sent data code: " .. code .. '\n\n')
 	code = tonumber(code)
@@ -391,6 +400,7 @@ function HGTimer(interval)
 		-- luup.call_timer("HGTimer", 1, interval, "", interval)	
 		if (DEBUG) then Log('Switched off!!! wrong API key: ' .. (API_KEY or "empty") .. ' for dev #' .. (pdev or 'empty')) end
 		luup.variable_set( SID.HG, "Enabled", 0, pdev )
+		luup.variable_set( SID.HG, "running", 0, pdev )
 		return
 	else
 		BASE_URL = SRV_URL .. API_KEY
@@ -404,7 +414,8 @@ function HGTimer(interval)
 		-- luup.call_timer("HGTimer", 1, interval, "", interval)	
 		if (DEBUG) then Log('Switched off!!! Enabled: ' .. (enabled or 'empty') .. ' Dev: ' .. (devEnabled or 'empty') .. ' for dev #' .. (pdev or 'empty')) end
 		luup.variable_set( SID.HG, "running", 0, pdev )
-		return
+		luup.call_timer("HGTimer", 1, interval, "", interval)
+		--return
 	end	
 
 	count = PopulateVars()
@@ -445,7 +456,7 @@ _G.UpdateIntervalHG = UpdateIntervalHG
 _G.UpdateStartHG = UpdateStartHG
 
 function startup(lul_device)
-	lul_device = lul_device or 513
+	lul_device = lul_device or 514
 	pdev = tonumber(lul_device)
 
 	local deviceData = luup.variable_get( SID.HG, "DeviceData", pdev ) or ""
