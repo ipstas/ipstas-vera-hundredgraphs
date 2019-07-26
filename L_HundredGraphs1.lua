@@ -409,15 +409,15 @@ function HGTimer(interval)
 	end
 
 	if (code == 204) then
-		luup.variable_set( SID.HG, "Enabled", 0, pdev )
+		--luup.variable_set( SID.HG, "Enabled", 0, pdev )
 		Log(' server returned 204, no data, HGTimer was stopped, check your lua file ') 
 		interval = 100000
 	elseif (code == 401) then
-		luup.variable_set( SID.HG, "Enabled", 0, pdev )
+		--luup.variable_set( SID.HG, "Enabled", 0, pdev )
 		Log(' server returned 401, your API key is wrong, HGTimer was stopped, check your lua file ') 
 		interval = 100000
 	elseif (code ~= 200) then
-		luup.variable_set( SID.HG, "Enabled", 0, pdev )
+		--luup.variable_set( SID.HG, "Enabled", 0, pdev )
 		Log(' unknown send status was returned: ' .. (code or 'empty')) 
 		--interval = 100000		
 	end
