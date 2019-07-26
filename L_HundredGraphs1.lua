@@ -248,17 +248,18 @@ end
 
 local function SerializeData()
 	local dataText = "{" .. table.concat(items, ",") .. "}"
-	if (DEBUG) then Log(" SerializeData: " .. dataText) end
+	-- if (DEBUG) then Log(" SerializeData: " .. dataText) end
 	dataTextExt = json.encode(itemsExtended)
 	dataText = string.gsub(dataText, " ", "_")	
 	--dataTextExt = string.gsub(dataTextExt, " ", "_")
-	if (DEBUG) then Log(" SerializeData Ext: " .. dataTextExt) end
+	-- if (DEBUG) then Log(" SerializeData Ext: " .. dataTextExt) end
 	return dataText, dataTextExt
 end
 
 local function ResetData()
 	items = {}
 	itemsExtended = {}
+	count = 0
 end
 
 local function AddPair(key, value, var, id)
@@ -425,32 +426,35 @@ function HGTimer(interval)
 		-- return 
 	-- end	
 
-	count = PopulateVars()
-	if (count > 0) then
-		code = SendData()
-	end
+	if enabled == 1 or devEnabled == 1 then
+		count = PopulateVars()
+		if (count > 0) then
+			code = SendData()
+		end
 
-	if (code == nil) then
-		local nothing
-	elseif (code == 204) then
-		--luup.variable_set( SID.HG, "Enabled", 0, pdev )
-		Log(' server returned 204, no data, HGTimer was stopped, check your lua file ') 
-		interval = 100000
-	elseif (code == 401) then
-		--luup.variable_set( SID.HG, "Enabled", 0, pdev )
-		Log(' server returned 401, your API key is wrong, HGTimer was stopped, check your lua file ') 
-		interval = 100000
-	elseif (code ~= 200) then
-		--luup.variable_set( SID.HG, "Enabled", 0, pdev )
-		Log(' unknown send status was returned: ' .. (code or 'empty')) 
-		--interval = 100000		
+		if (code == nil) then
+			Log('server returned empty code') 
+		elseif (code == 204) then
+			--luup.variable_set( SID.HG, "Enabled", 0, pdev )
+			Log(' server returned 204, no data, HGTimer was stopped, check your lua file ') 
+			interval = 100000
+		elseif (code == 401) then
+			--luup.variable_set( SID.HG, "Enabled", 0, pdev )
+			Log(' server returned 401, your API key is wrong, HGTimer was stopped, check your lua file ') 
+			interval = 100000
+		elseif (code ~= 200) then
+			--luup.variable_set( SID.HG, "Enabled", 0, pdev )
+			Log(' unknown send status was returned: ' .. (code or 'empty')) 
+			--interval = 100000		
+		end
+		
+		if (code ~= httpRes) then
+			httpRes = code
+			luup.variable_set( SID.HG, "lastRun", code, pdev )
+		end
 	end
+	
 	local res = luup.call_timer("HGTimer", 1, interval, "", interval)
-
-	if (code ~= httpRes) then
-		httpRes = code
-		luup.variable_set( SID.HG, "lastRun", code, pdev )
-	end
 	
 	if (DEBUG) then Log(' next in ' .. interval) end
 	luup.variable_set( SID.HG, "running", 1, pdev )
