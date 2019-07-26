@@ -79,6 +79,59 @@
 						"ControlCode": "tb_disable"
 					}
 				]
+			},			
+			{
+				"ControlGroup": "1",
+				"ControlType": "multi_state_button",
+				"top": "0",
+				"left": "1",
+				"Display": {
+					"Top": 0,
+					"Left": 330,
+					"Width": 70,
+					"Height": 24
+				},
+				"states": [{
+						"Label": {
+							"lang_tag": "tb_enabled",
+							"text": "Dev"
+						},
+						"Display": {
+							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+							"Variable": "Dev",
+							"Value": "1"
+						},
+						"Command": {
+							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+							"Action": "SetDev",
+							"Parameters": [{
+								"Name": "newDev",
+								"Value": "1"
+							}]
+						},
+						"ControlCode": "tb_enable"
+					},
+					{
+						"Label": {
+							"lang_tag": "tb_disabled",
+							"text": "Dev"
+						},
+						"Display": {
+							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+							"Variable": "Dev",
+							"Value": "0"
+						},
+						"Command": {
+							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+							"Action": "SetDev",
+							"Parameters": [{
+								"Name": "newDev",
+								"Value": "0"
+							}]
+						},
+						"ControlCode": "tb_disable"
+					}
+				]
 			},
 			{
 				"ControlType": "input",

@@ -9,6 +9,7 @@
 		local MIN_VERSION = 111183
 
 		local plugin
+		local library
 		
 		function startup(lul_device)
 			if (package.path:find ("/etc/cmh-ludl/?.lua;/etc/cmh-lu/?.lua", 1, true) == nil) then
@@ -17,6 +18,7 @@
 
 			package.loaded.L_HundredGraphs1 = nil
 			plugin = require("L_HundredGraphs1")
+
 			if (package.loaded.L_HundredGraphs1 == nil)
 			then
 				luup.log("HundredGraphs plugin: plugin is not installed correctly. Library L_HundredGraphs1 cannot be loaded.", 1)
@@ -45,6 +47,14 @@
 			<run>
 				luup.variable_set( "urn:hundredgraphs-com:serviceId:HundredGraphs1", "Enabled",
 					lul_settings.newEnabledValue, lul_device )
+			</run>
+		</action>		
+		<action>
+			<serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
+			<name>SetDev</name>
+			<run>
+				luup.variable_set( "urn:hundredgraphs-com:serviceId:HundredGraphs1", "Dev",
+					lul_settings.newDev, lul_device )
 			</run>
 		</action>
 		<action>
@@ -78,7 +88,7 @@
 			<serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
 			<name>SetInterval</name>
 			<run>
-				luup.log("HundredGraphs SetInterval called: " .. (lul_settings.newIntervalValue or "empty"))
+				luup.log("HundredGraphs SetInterval called: " .. (lul_settings.newIntervalValue or 600))
 				local newInterval = lul_settings.newIntervalValue
 				if newInterval ~= nil then newInterval = tonumber(newInterval, 10) end
 				if newInterval ~= nil and newInterval > 0 then

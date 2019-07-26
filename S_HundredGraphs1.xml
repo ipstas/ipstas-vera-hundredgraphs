@@ -25,6 +25,12 @@
 			<shortCode>Enabled</shortCode>
 		</stateVariable>
 		<stateVariable sendEvents="yes">
+			<name>Dev</name>
+			<dataType>string</dataType>
+			<defaultValue>0</defaultValue>
+			<shortCode>Dev</shortCode>
+		</stateVariable>
+		<stateVariable sendEvents="yes">
 			<name>lastRun</name>
 			<dataType>string</dataType>
 			<defaultValue>0</defaultValue>
@@ -81,6 +87,16 @@
 					<name>newEnabledValue</name>
 					<direction>in</direction>
 					<relatedStateVariable>Enabled</relatedStateVariable>
+				</argument>
+			</argumentList>
+		</action>
+		<action>
+			<name>SetDev</name>
+			<argumentList>
+				<argument>
+					<name>newDev</name>
+					<direction>in</direction>
+					<relatedStateVariable>Dev</relatedStateVariable>
 				</argument>
 			</argumentList>
 		</action>
