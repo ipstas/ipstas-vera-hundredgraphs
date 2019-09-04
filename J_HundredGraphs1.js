@@ -142,7 +142,7 @@ var HundredGraphs = (function (api) {
                         for (let attr of item.states) {
                             if (attr.service == checkIt.serviceId && attr.variable == checkIt.serviceVar){
                                 if (item.id){
-                                    console.warn('HundredGraphs found', checkIt.serviceVar, 'device:', item.id, item.name);
+                                    console.log('HundredGraphs found', checkIt.serviceVar, 'device:', item.id, item.name);
                                     var p = {
                                         type: checkIt.type,
                                         deviceId: item.id,
@@ -178,7 +178,7 @@ var HundredGraphs = (function (api) {
         }catch(e){
             console.error('HundredGraphs getListDevices err:', e);
         }
-        console.log('HundredGraphs found PM devices:', hg_deviceData.length, 'of', deviceData.length);
+        //console.log('HundredGraphs found PM devices:', hg_deviceData.length, 'of', deviceData.length);
     }
 
     function unpackDeviceData(device) {
@@ -246,7 +246,7 @@ var HundredGraphs = (function (api) {
             //console.log('{HundredGraphs packDeviceData} item: ', item);
             deviceData = deviceData + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ';';
         }
-        console.log('{HundredGraphs packDeviceData} deviceData: ', deviceData);
+        //console.log('{HundredGraphs packDeviceData} deviceData: ', deviceData);
 		function onSuccess(){
 			//console.log('{HundredGraphs packDeviceData} deviceData saved: ', true);
 			showDevices();		
@@ -256,7 +256,7 @@ var HundredGraphs = (function (api) {
     }
  
     function resetSID_ALL(){
-        console.log('{HundredGraphs resetSID_ALL} SID_ALL: ', SID_ALL);
+        //console.log('{HundredGraphs resetSID_ALL} SID_ALL: ', SID_ALL);
         hg_sids = [];
 		var html = '';
 		html += '<div class="favorites_device_busy_device_overlay"><div class="round_loading deviceCpanelBusySpinner"></div></div>';
@@ -295,7 +295,7 @@ var HundredGraphs = (function (api) {
         return packSID_ALL();
     }
     function delSID(){
-        console.log('{HundredGraphs addSID} SID_ALL: ', SID_ALL);
+        //console.log('{HundredGraphs addSID} SID_ALL: ', SID_ALL);
         let item = {};
         item.type = 'Custom';
         item.serviceVar = document.getElementById("serviceVar").value;			
@@ -392,7 +392,7 @@ var HundredGraphs = (function (api) {
 				
 				var deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
 				if (!deviceData || deviceData == ""){			
-					console.warn('HundredGraphs deviceData:', deviceData);
+					//console.warn('HundredGraphs deviceData:', deviceData);
 					html += '<p id="status_data" style="width:90%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:red">Devices are not saved</p>';	
 				}
                 // Area to display statuses and error messages.
