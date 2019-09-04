@@ -44,7 +44,6 @@
 				}
 			},
 			{
-				"ControlGroup": "1",
 				"ControlType": "variable",
 				"top": 0,
 				"left": 0,
@@ -59,7 +58,6 @@
 				}
 			},
 			{
-				"ControlGroup": "1",
 				"ControlType": "multi_state_button",
 				"top": "0",
 				"left": "1",
@@ -195,7 +193,6 @@
 				}
 			},
 			{
-				"ControlGroup": "1",
 				"ControlType": "variable",
 				"top": 0,
 				"left": 0,
@@ -210,6 +207,7 @@
 				}
 			},
 			{
+				"ControlGroup": "1",
 				"ControlType": "label",
 				"top": 0,
 				"left": 0,
@@ -330,7 +328,6 @@
 		"TabType": "javascript",
 		"ScriptName": "shared.js",
 		"Function": "device_scenes"
-	}
-],
+	}],
 	"DeviceType": "urn:hundredgraphs-com:device:HundredGraphs:1"
 }
