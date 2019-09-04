@@ -28,15 +28,46 @@
 		}],
 		"Control": [
 			{
+				"ControlType": "label",
+				"top": 0,
+				"left": 0,
+				"HorizontalMultiplier": 1,
+				"Display": {
+					"Top": 0,
+					"Left": 0,
+					"Width": 70,
+					//"Height": 24
+				},
+				"Label": {
+					"lang_tag": "api_key",
+					"text": "API Key: "
+				}
+			},
+			{
+				"ControlGroup": "1",
+				"ControlType": "variable",
+				"top": 0,
+				"left": 0,
+				"HorizontalMultiplier": 1,
+				"Display": {
+					"Top": 0,
+					"Left": 90,
+					"Width": 70,
+					//"Height": 24,
+					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
+					"Variable": "API"
+				}
+			},
+			{
 				"ControlGroup": "1",
 				"ControlType": "multi_state_button",
 				"top": "0",
 				"left": "1",
 				"Display": {
-					"Top": 0,
-					"Left": 240,
+					"Top": 30,
+					"Left": 0,
 					"Width": 70,
-					"Height": 24
+					"Height": 50
 				},
 				"states": [{
 						"Label": {
@@ -80,73 +111,32 @@
 					}
 				]
 			},			
-			{
-				"ControlGroup": "1",
-				"ControlType": "multi_state_button",
-				"top": "0",
-				"left": "1",
-				"Display": {
-					"Top": 0,
-					"Left": 330,
-					"Width": 70,
-					"Height": 24
-				},
-				"states": [{
-						"Label": {
-							"lang_tag": "tb_enabled",
-							"text": "Dev"
-						},
-						"Display": {
-							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
-							"Variable": "Dev",
-							"Value": "1"
-						},
-						"Command": {
-							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
-							"Action": "SetDev",
-							"Parameters": [{
-								"Name": "newDev",
-								"Value": "1"
-							}]
-						},
-						"ControlCode": "tb_enable"
-					},
-					{
-						"Label": {
-							"lang_tag": "tb_disabled",
-							"text": "Dev"
-						},
-						"Display": {
-							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
-							"Variable": "Dev",
-							"Value": "0"
-						},
-						"Command": {
-							"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
-							"Action": "SetDev",
-							"Parameters": [{
-								"Name": "newDev",
-								"Value": "0"
-							}]
-						},
-						"ControlCode": "tb_disable"
-					}
-				]
-			},
+			// {
+			// 	"ControlGroup": "1",
+			// 	"ControlType": "multi_state_button",
+			// 	"top": "0",
+			// 	"left": "1",
+			// 	"Display": {
+			// 		"Top": 30,
+			// 		"Left": 0,
+			// 		"Width": 70,
+			// 		//"Height": 24
+			// 	}
+			// },
 			{
 				"ControlType": "input",
 				"ID": "HGInterval",
-				"top": "1",
-				"left": "0",
+				"top": 0,
+				"left": 0,
 				"Label": {
 					"lang_tag": "tb_trip",
 					"text": "Interval"
 				},
 				"Display": {
-					"Top": 10,
+					"Top": 90,
 					"Left": 0,
-					"Width": 120,
-					"Height": 24,
+					"Width": 70,
+					//"Height": 24,
 					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
 					"Variable": "Interval",
 					"Value": "1"
@@ -165,17 +155,17 @@
 			},
 			{
 				"ControlType": "button",
-				"top": "1",
-				"left": "1",
+				"top": 0,
+				"left": 0,
 				"Label": {
 					"lang_tag": "cmd_set",
 					"text": "Set" 
 				},
 				"Display": {
-					"Top": 10,
-					"Left": 140,
+					"Top": 90,
+					"Left": 90,
 					"Width": 50,
-					"Height": 24 
+					//"Height": 24 
 				},
 				"Command": {
 					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
@@ -190,14 +180,14 @@
 			},
 			{
 				"ControlType": "label",
-				"top": "2",
-				"left": "0",
+				"top": 0,
+				"left": 0,
 				"HorizontalMultiplier": 1,
 				"Display": {
-					"Top": 60,
+					"Top": 120,
 					"Left": 0,
-					"Width": 384,
-					"Height": 32
+					"Width": 70,
+					//"Height": 32
 				},
 				"Label": {
 					"lang_tag": "interval_label",
@@ -207,28 +197,28 @@
 			{
 				"ControlGroup": "1",
 				"ControlType": "variable",
-				"top": "2",
-				"left": "0",
+				"top": 0,
+				"left": 0,
 				"HorizontalMultiplier": 1,
 				"Display": {
-					"Top": 60,
-					"Left": 60,
-					"Width": 384,
-					"Height": 32,
+					"Top": 120,
+					"Left": 90,
+					"Width": 50,
+					//"Height": 32,
 					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
 					"Variable": "Interval"
 				}
 			},
 			{
 				"ControlType": "label",
-				"top": "2",
-				"left": "0",
+				"top": 0,
+				"left": 0,
 				"HorizontalMultiplier": 1,
 				"Display": {
-					"Top": 60,
-					"Left": 120,
-					"Width": 384,
-					"Height": 32
+					"Top": 120,
+					"Left": 140,
+					"Width": 70,
+					//"Height": 32
 				},
 				"Label": {
 					"lang_tag": "lastrun_label",
@@ -238,28 +228,28 @@
 			{
 				"ControlGroup": "1",
 				"ControlType": "variable",
-				"top": "2",
-				"left": "1",
+				"top": 0,
+				"left": 0,
 				"HorizontalMultiplier": 1,
 				"Display": {
-					"Top": 60,
-					"Left": 180,
-					"Width": 320,
-					"Height": 32,
+					"Top": 120,
+					"Left": 230,
+					"Width": 50,
+					//"Height": 32,
 					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
 					"Variable": "lastRun"
 				}
 			},
 			{
 				"ControlType": "label",
-				"top": 3,
+				"top": 0,
 				"left": 0,
 				"HorizontalMultiplier": 4,
 				"Display": {
-					"Top": 90,
+					"Top": 150,
 					"Left": 0,
 					"Width": 384,
-					"Height": 24
+					//"Height": 24
 				},
 				"Label": {
 					"lang_tag": "hundredgraphs_about",
@@ -281,7 +271,18 @@
 	},
 	{
 		"Label": {
-			"lang_tag": "hg_devices",
+			"lang_tag": "hg_custom",
+			"text": "Custom Vars"
+		},
+		"Position": 1,
+		"TopNavigationTab": 1,
+		"TabType": "javascript",
+		"ScriptName": "J_HundredGraphs1.js",
+		"Function": "HundredGraphs.customDevices"
+	},
+	{
+		"Label": {
+			"lang_tag": "hg_about",
 			"text": "About"
 		},
 		"Position": 1,

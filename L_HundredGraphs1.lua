@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '2.1'
+local version = ''
 
 local ltn12 = require("ltn12")
 local library	= require "L_HundredGraphsLibrary"
@@ -20,20 +20,23 @@ local library	= require "L_HundredGraphsLibrary"
 --local gviz  	= library.gviz()
 local json  	= library.json() 
 
-luup.log('HundredGraphs json version: ' .. (json.version or 'empty'))
+--luup.log('HundredGraphs json version: ' .. (json.version or 'empty'))
 
 local SID = {
 	["HG"] = "urn:hundredgraphs-com:serviceId:HundredGraphs1",
 	["PM"] = "urn:micasaverde-com:serviceId:EnergyMetering1",
 	["SES"] = "urn:micasaverde-com:serviceId:SecuritySensor1",
 	["HUM"] = "urn:micasaverde-com:serviceId:HumiditySensor1",
-	["TMP"] = "urn:upnp-org:serviceId:TemperatureSensor1"
+	["TMP"] = "urn:upnp-org:serviceId:TemperatureSensor1",
+	["THM"] = "urn:micasaverde-com:serviceId:HVAC_OperatingState1",
 }
 local SRV = {
 	["PM"] = "Watts",
+	["PM2"] = "KWH",
 	["SES"] = "Tripped",
 	["TMP"] = "CurrentTemperature",
-	["HUM"] = "CurrentLevel"
+	["HUM"] = "CurrentLevel",
+	["THM"] = "ModeState"
 }
 
 
@@ -133,7 +136,7 @@ http.TIMEOUT = 60
 local BASE_URL = ""
 
 local Log = function (text) 
-	luup.log('[HundredGraphs2 Logger] ' .. (text or "empty")) 
+	luup.log('[HundredGraphs Logger] ' .. (text or "empty")) 
 end
 
 local function TableInsert(item)
@@ -195,8 +198,7 @@ local function split(str)
 	return tbl	
  end
 
-function UpdateStartHG()
-	
+function UpdateStartHG()	
 	local last = luup.variable_get( SID.HG, "running", pdev )
 	Log(' switch was switched. If running: ' .. last)
 	if (last == 0) then
@@ -208,6 +210,10 @@ function UpdateStartHG()
 			HGTimer()
 		end
 	end
+end
+function UpdateStartVersion()	
+	version = luup.variable_get( SID.HG, "version", pdev )
+	Log(' version was updated: ' .. version)
 end
 
 function UpdateVariablesHG()
@@ -451,9 +457,21 @@ function HGTimer(interval)
 			--interval = 100000		
 		end
 		
+		if (code == 200) then
+			code = 'OK'
+		end
+
 		if (code ~= httpRes) then
 			httpRes = code
 			luup.variable_set( SID.HG, "lastRun", code, pdev )
+			if (code == 'OK') then
+				local commfailure = luup.variable_get(SID.HG, "CommFailure", pdev) 
+				if (commfailure == "1") then 
+						luup.log("Device "..pdev.." has CommFailure="..commfailure..". set it to 0") 
+						luup.variable_set(SID.HG, "CommFailure", "0", pdev) 
+						luup.call_action(SID.HG, "Reload", {}, 0) 
+				end 
+			end
 		end
 	end
 	
@@ -480,24 +498,24 @@ function startup(lul_device)
 	if (deviceData == "" or deviceData == '-') then
 		VARIABLES = {}
 		-- Get the list of power meters.
-		for devNum, devAttr in pairs( luup.devices ) do		
-			local val = luup.variable_get(SID.PM, SRV.PM, devNum)
-			if (val ~= nil) then	
-				--local desc = luup.variable_get(SID.PM, "description", devNum)			
-				Log("Device #" .. devAttr.id .. " desc: " .. devAttr.description .. " KWH:" .. val)
-				local item = {}
-				item.type = 'PM'
-				item.deviceId = devNum
-				item.key = devAttr.description
-				item.serviceId = SID.PM
-				item.serviceVar = SRV.PM
-				item.enabled = "checked"
-				table.insert(VARIABLES, item)				
-			end
-		end
-		Log(' Created initial VARIABLES: ' .. dumpTable(VARIABLES))
-		deviceData = PackDeviceDataHG()
-		Log(' Created initial deviceData: ' .. deviceData)
+		-- for devNum, devAttr in pairs( luup.devices ) do		
+			-- local val = luup.variable_get(SID.PM, SRV.PM, devNum)
+			-- if (val ~= nil) then	
+				local desc = luup.variable_get(SID.PM, "description", devNum)			
+				-- Log("Device #" .. devAttr.id .. " desc: " .. devAttr.description .. " KWH:" .. val)
+				-- local item = {}
+				-- item.type = 'PM'
+				-- item.deviceId = devNum
+				-- item.key = devAttr.description
+				-- item.serviceId = SID.PM
+				-- item.serviceVar = SRV.PM
+				-- item.enabled = "checked"
+				-- table.insert(VARIABLES, item)				
+			-- end
+		-- end
+		-- Log(' Created initial VARIABLES: ' .. dumpTable(VARIABLES))
+		-- deviceData = PackDeviceDataHG()
+		-- Log(' Created initial deviceData: ' .. deviceData)
 	else
 		UpdateVariablesHG()
 		luup.log("HundredGraphs: existing deviceData: " .. deviceData .. " VARS: " .. dumpTable(VARIABLES))
@@ -523,6 +541,7 @@ function startup(lul_device)
 	luup.variable_watch("UpdateIntervalHG", SID.HG, "Interval", pdev)
 	luup.variable_watch("UpdateStartHG", SID.HG, "Enabled", pdev)
 	luup.variable_watch("UpdateStartHG", SID.HG, "Dev", pdev)
+	luup.variable_watch("UpdateStartVersion", SID.HG, "version", pdev)
 	
 	-- Log(' Started from plugin, ' .. SID.HG .. ' dev: ' .. (pdev  or "empty") .. ' enabled: ' .. (enabled or 'disabled') .. ' API_KEY: ' .. API_KEY)  
 	HGTimer() 
