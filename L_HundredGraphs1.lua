@@ -307,18 +307,19 @@ local function PopulateVars()
 end
 
 local function sendRequestHook(payload)
-
-	if (DEBUG) then Log(" sending Ext data: " .. payload) end
 	
-	payload = '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"1","events":'..payload..'}' 	
 	local response_body1 = {} 
 	local response_body2 = {}
 	local res, code, code1, code2, response_headers, status
+	
 
 	local enabled = luup.variable_get(SID.HG, "Enabled", pdev) 
 	
 	if enabled == 1 or enabled == '1' then
-		Log(' enabled: ' .. (enabled or 0))
+		NODE_ID = luup.variable_get(SID.HG, "DeviceNode", pdev)  or 1
+		payload = '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"' .. NODE_ID .. '","events":'..payload..'}' 	
+		if (DEBUG) then  Log(' enabled: ' .. (enabled or 0) .. ' payload: '.. payload) end
+
 		res, code1, response_headers, status = http.request{
 			url = SRV_URL_POST,
 			method = "POST",
@@ -329,6 +330,7 @@ local function sendRequestHook(payload)
 			source = ltn12.source.string(payload),
 			sink = ltn12.sink.table(response_body1)
 		}
+		
 		Log('Post response code = ' .. code1 .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat(response_body1) .. '\n')
 		if (code1 ~= 200) then
 			Log('Prod Payload was: ' .. payload)
@@ -338,6 +340,8 @@ local function sendRequestHook(payload)
 	local devEnabled = luup.variable_get(SID.HG, "Dev", pdev) 
 	
 	if devEnabled == 1 or devEnabled == '1' then
+		NODE_ID = NODE_ID or luup.variable_get(SID.HG, "DeviceNode", pdev) or 1
+		payload = payload or '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"' .. NODE_ID .. '","events":'..payload..'}' 
 		Log(' dev: ' .. (devEnabled or empty))
 		response_body2 = {}
 		res, code2, response_headers, status = https.request{

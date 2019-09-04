@@ -1,4 +1,4 @@
-const version = "2.2";
+const version = "2.3";
 
 var HundredGraphs = (function (api) {
     let myModule = {};   
@@ -50,6 +50,7 @@ var HundredGraphs = (function (api) {
 
     let hg_deviceData = [];
     let hg_sids = [];
+    let hg_node = 1;
 
     api.setDeviceStatePersistent(device, SID_HG, "version", version, 0);
     
@@ -61,6 +62,7 @@ var HundredGraphs = (function (api) {
             html += '<li>Select your devices in tab Devices</li>';
             html += '<li>Set your reporting interval</li>';
             html += '<li>If you need any custom devices not preconfigured for you, check <b>Custom Vars</b> tab</li>';
+            html += '<li>Update Node if required (each reporting device, ie Vera, needs its own node)</b> tab</li>';
             html += '<li>You are all set</li>';
             html += '</ul></p>';
             html += '<p>SID_HG: ' + SID_HG + '</p>';
@@ -134,10 +136,10 @@ var HundredGraphs = (function (api) {
         var deviceData = api.getUserData().devices;
         var devsids = readCustom();
         try{
-            for (item of deviceData){
+            for (let item of deviceData){
                 if (item.id){
-                    for (checkIt of devsids){
-                        for (attr of item.states) {
+                    for (let checkIt of devsids){
+                        for (let attr of item.states) {
                             if (attr.service == checkIt.serviceId && attr.variable == checkIt.serviceVar){
                                 if (item.id){
                                     console.warn('HundredGraphs found', checkIt.serviceVar, 'device:', item.id, item.name);
@@ -156,7 +158,7 @@ var HundredGraphs = (function (api) {
                             }                    
                         }
                     }
-                    console.log();
+                    //console.log();
                 }
             }         
             hg_deviceData = hg_deviceData.sort(function(a, b){
@@ -180,6 +182,7 @@ var HundredGraphs = (function (api) {
     }
 
     function unpackDeviceData(device) {
+        hg_node = api.getDeviceState(device, SID_HG, "DeviceNode") || 1;
         var deviceData;
         try {
             console.log('HundredGraphs running unpackDeviceData for:', device, 'initial:', hg_deviceData);
@@ -213,7 +216,7 @@ var HundredGraphs = (function (api) {
             }
             for (var i = 0; i < hg_deviceData.length; i++) {
                 if (!hg_deviceData[i].type){
-                    for (checkIt of hg_sids){
+                    for (let checkIt of hg_sids){
                         if (hg_deviceData[i].serviceId == checkIt.serviceId){
                             hg_deviceData[i].type = checkIt.type;
                         }             
@@ -233,11 +236,13 @@ var HundredGraphs = (function (api) {
 
     function packDeviceData(){
         //console.log('{HundredGraphs packDeviceData} hg_deviceData: ', hg_deviceData);
+        hg_node = document.getElementById("deviceNode").value;
+        api.setDeviceStatePersistent(device, SID_HG, "DeviceNode", hg_node);
         var deviceData = '';
 		var html = '';
 		html += '<div class="favorites_device_busy_device_overlay"><div class="round_loading deviceCpanelBusySpinner"></div></div>';
-		api.setCpanelContent(html);
-        for (item of hg_deviceData){
+        api.setCpanelContent(html);       
+        for (let item of hg_deviceData){
             //console.log('{HundredGraphs packDeviceData} item: ', item);
             deviceData = deviceData + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ';';
         }
@@ -246,8 +251,7 @@ var HundredGraphs = (function (api) {
 			//console.log('{HundredGraphs packDeviceData} deviceData saved: ', true);
 			showDevices();		
 		}
-        api.setDeviceStatePersistent(device, SID_HG, "DeviceData", deviceData, {onSuccess: onSuccess});
-				
+        api.setDeviceStatePersistent(device, SID_HG, "DeviceData", deviceData, {onSuccess: onSuccess});			
 		return true;
     }
  
@@ -270,7 +274,7 @@ var HundredGraphs = (function (api) {
 		var html = '';
 		html += '<div class="favorites_device_busy_device_overlay"><div class="round_loading deviceCpanelBusySpinner"></div></div>';
 		api.setCpanelContent(html);
-        for (item of hg_sids){
+        for (let item of hg_sids){
             //console.log('{HundredGraphs packSID_ALL} item: ', item);
             deviceData = deviceData + 'type=' + item.type + ',serviceVar=' + item.serviceVar + ',serviceId=' + item.serviceId + ';';
         }
@@ -382,6 +386,8 @@ var HundredGraphs = (function (api) {
 				unpackDeviceData(device);
             //console.log('HundredGraphs unpacked devs:', hg_deviceData);
 
+            var deviceNode = api.getDeviceState(device, SID_HG, "DeviceNode");
+
             if (hg_deviceData.length > 0) {
 				
 				var deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
@@ -391,9 +397,10 @@ var HundredGraphs = (function (api) {
 				}
                 // Area to display statuses and error messages.
                 html += '<p id="status_display" style="width:90%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:black"></p>';
+                html += '<p id="" style="">Node: <input type="text" id="deviceNode" class="form-control ds-input" style="max-width: 60px;display: inline;" name="deviceNode" value=' + hg_node + ' oninput="this.value = this.value.replace(/[^0-9.]/g, \'\').replace(/(\..*)\./g, \'$1\');"> numerical only</p>';
 
-                html += '<table style="width:90%; position:relative; margin-left:auto; margin-right:auto">';
-
+                // show devices
+                html += '<br\><table style="width:90%; position:relative; margin-left:auto; margin-right:auto">';
                 // Show titles
                 html += '<tr>';
                 html += '<td style="font-weight:bold; text-align:center; width:35%">Type</td>';
