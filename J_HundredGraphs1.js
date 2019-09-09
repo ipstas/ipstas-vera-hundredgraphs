@@ -1,4 +1,4 @@
-const version = "2.3";
+const version = "2.4";
 
 var HundredGraphs = (function (api) {
     let myModule = {};   

@@ -46,7 +46,7 @@ local pdev
 -- API Key
 -- local API_KEY = "AABBCCDD" -- grab that KEY from your settings on https://www.hundredgraphs.com/settings
 local API_KEY
-local NODE_ID = 1
+local NODE_ID
 local TOTAL = 'Total'
 local SRV_URL = "https://www.hundredgraphs.com/api?key=" 
 local DEV_URL_POST = "http://dev.hundredgraphs.com/hook/" 
@@ -235,6 +235,11 @@ function UpdateIntervalHG()
 	Log( " Watched Interval: " .. interval )
 end
 
+function UpdateNodeId()
+	NODE_ID = luup.variable_get(SID.HG, "DeviceNode", pdev) or '1'
+	Log( " Watched NODE_ID: " .. NODE_ID )
+end
+
 function PackDeviceDataHG()
 	local deviceData = ""
 	for i, v in pairs( VARIABLES ) do
@@ -306,18 +311,18 @@ local function PopulateVars()
 	return count
 end
 
-local function sendRequestHook(payload)
+local function sendRequestHook(events)
 	
 	local response_body1 = {} 
 	local response_body2 = {}
-	local res, code, code1, code2, response_headers, status
+	local res, code, code1, code2, response_headers, status, payload
 	
 
 	local enabled = luup.variable_get(SID.HG, "Enabled", pdev) 
+	NODE_ID = NODE_ID or luup.variable_get(SID.HG, "DeviceNode", pdev)  or 1
 	
 	if enabled == 1 or enabled == '1' then
-		NODE_ID = luup.variable_get(SID.HG, "DeviceNode", pdev)  or 1
-		payload = '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"' .. NODE_ID .. '","events":'..payload..'}' 	
+		payload = '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"' .. NODE_ID .. '","events":'..events..'}' 	
 		if (DEBUG) then  Log(' enabled: ' .. (enabled or 0) .. ' payload: '.. payload) end
 
 		res, code1, response_headers, status = http.request{
@@ -340,8 +345,7 @@ local function sendRequestHook(payload)
 	local devEnabled = luup.variable_get(SID.HG, "Dev", pdev) 
 	
 	if devEnabled == 1 or devEnabled == '1' then
-		NODE_ID = NODE_ID or luup.variable_get(SID.HG, "DeviceNode", pdev) or 1
-		payload = payload or '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"' .. NODE_ID .. '","events":'..payload..'}' 
+		payload = payload or '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"' .. NODE_ID .. '","events":'..events..'}' 
 		Log(' dev: ' .. (devEnabled or empty))
 		response_body2 = {}
 		res, code2, response_headers, status = https.request{
@@ -530,6 +534,7 @@ function startup(lul_device)
 
 	local enabled = luup.variable_get( SID.HG, "Enabled", pdev )	 
 	
+	NODE_ID = luup.variable_get( SID.HG, "DeviceNode", pdev ) or '1'
 	API_KEY = luup.variable_get( SID.HG, "API", pdev )
 	if (API_KEY == nil) then
 		luup.variable_set( SID.HG, "API", 'empty', pdev )
@@ -546,6 +551,7 @@ function startup(lul_device)
 	luup.variable_watch("UpdateStartHG", SID.HG, "Enabled", pdev)
 	luup.variable_watch("UpdateStartHG", SID.HG, "Dev", pdev)
 	luup.variable_watch("UpdateStartVersion", SID.HG, "version", pdev)
+	luup.variable_watch("UpdateDeviceNode", SID.HG, "DeviceNode", pdev)
 	
 	-- Log(' Started from plugin, ' .. SID.HG .. ' dev: ' .. (pdev  or "empty") .. ' enabled: ' .. (enabled or 'disabled') .. ' API_KEY: ' .. API_KEY)  
 	HGTimer() 
