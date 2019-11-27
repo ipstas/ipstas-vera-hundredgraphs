@@ -1,4 +1,4 @@
-let versionHG = "2.6";
+var versionHG = "2.6";
 
 var HundredGraphs = (function (api) {
     let myModule = {};   
