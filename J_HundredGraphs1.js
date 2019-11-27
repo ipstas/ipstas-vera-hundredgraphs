@@ -79,8 +79,6 @@ var HundredGraphs = (function (api) {
 				api.setDeviceStatePersistent(device, SID_HG, "Dev", 0, {dynamic: true});
 			if (device)
 				api.setDeviceStatePersistent(device, SID_HG, "version", versionHG, {dynamic: true});
-			if (device)
-				return true;
 			console.log('HG getDevice:', device, SID_HG, Enabled, DevEnable, versionHG);
 		}catch(e){
 			Utils.logError('Error in MyPlugin.getDevice(): ' + e);
@@ -131,7 +129,7 @@ var HundredGraphs = (function (api) {
 			else 
 				check = false, change = 1;				
 			//html += '<p>Dev: <input type="checkbox" value="' + check + '" onClick="api.setDeviceStatePersistent(device, SID_HG, "Dev", change, {dynamic: true})"</p>';
-			html += '<p>Dev: ' + DevEnable + '</p>';
+			html += '<p>Debug: ' + DevEnable + '</p>';
 			api.setCpanelContent(html);
 		} catch (e) {
 			Utils.logError('Error in MyPlugin.about(): ' + e);
