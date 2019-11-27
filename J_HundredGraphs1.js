@@ -1,8 +1,9 @@
-const version = "2.4";
+let versionHG = "2.6";
 
 var HundredGraphs = (function (api) {
     let myModule = {};   
-    const device = api.getCpanelDeviceId();  
+    let device;// = api.getCpanelDeviceId();
+	let API;
     const uuid = '4d494342-5342-5645-01e6-000002fb37e3';    
     const SID_HG = 'urn:hundredgraphs-com:serviceId:HundredGraphs1';
     const SID_ALL = [
@@ -15,6 +16,16 @@ var HundredGraphs = (function (api) {
             type: 'PM2',
             serviceId: "urn:micasaverde-com:serviceId:EnergyMetering1",
             serviceVar: "KWH",
+        },
+        {
+            type: 'PM3',
+            serviceId: "urn:upnp-org:serviceId:Dimming1",
+            serviceVar: "LoadLevelStatus",
+        },
+        {
+            type: 'PM4',
+            serviceId: "urn:upnp-org:serviceId:SwitchPower1",
+            serviceVar: "Status",
         },
 /* 		{
             type: 'SW',
@@ -52,29 +63,91 @@ var HundredGraphs = (function (api) {
     let hg_sids = [];
     let hg_node = 1;
 
-    api.setDeviceStatePersistent(device, SID_HG, "version", version, 0);
     
+    let Enabled = 0;
+    let DevEnable =  0;
+	//console.log('HG start:', device, SID_HG, Enabled, DevEnable, versionHG);
+	
+	function getDevice(){
+		if (device) return; 
+		try{
+			device = device || api.getCpanelDeviceId();
+			API = api.getDeviceState(device, SID_HG, "API");
+			Enabled = api.getDeviceState(device, SID_HG, "Enabled");
+			DevEnable = api.getDeviceState(device, SID_HG, "Dev");
+			if ((!DevEnable || DevEnable == '') && device)
+				api.setDeviceStatePersistent(device, SID_HG, "Dev", 0, {dynamic: true});
+			if (device)
+				api.setDeviceStatePersistent(device, SID_HG, "version", versionHG, {dynamic: true});
+			if (device)
+				return true;
+			console.log('HG getDevice:', device, SID_HG, Enabled, DevEnable, versionHG);
+		}catch(e){
+			Utils.logError('Error in MyPlugin.getDevice(): ' + e);
+		}
+	}
+	function setAPI(){
+		try{
+			API = document.getElementById("setAPI").value;
+			api.setDeviceStatePersistent(device, SID_HG, "API", API, {dynamic: true});
+			about();
+			//console.log('HG getDevice:', device, SID_HG, Enabled, DevEnable, versionHG);
+		}catch(e){
+			Utils.logError('Error in MyPlugin.getDevice(): ' + e);
+		}
+	}
+	
+	function aboutSet(){
+		try {
+			Enabled = api.getDeviceState(device, SID_HG, "Enabled") || 0;
+			DevEnable = api.getDeviceState(device, SID_HG, "Dev") || 0;
+			Enabled = parseInt(Enabled);
+			DevEnable = parseInt(DevEnable);
+			versionHG = api.getDeviceState(device, SID_HG, "version");		
+			console.log('HG about:', device, SID_HG, API, Enabled, DevEnable, versionHG);
+			var html = '<p>Read the full docs at <a href="https://www.hundredgraphs.com/apidocs" target=_blank>HundredGraphs API</a></p>';
+			html += '<p><ul>';
+			html += '<li>Grab your API KEY from <a href="https://www.hundredgraphs.com/settings" target=_blank>HG Settings</a> and then set it here</li>';
+			html += '<li>Select your devices in tab Devices</li>';
+			html += '<li>Set your reporting interval</li>';
+			html += '<li>If you need any custom devices not preconfigured for you, check <b>Custom Vars</b> tab</li>';
+			html += '<li>Update Node if required (each reporting hub, ie Vera, needs its own node)</b> tab</li>';
+			html += '<li>You are all set</li>';
+			html += '</ul></p>';
+			html += '<p>API KEY: <input type="text" id="setAPI" class="ds-input" name="setAPI" value=' + API + '> <input type="button" class="btn btn-info" value="Set" onClick="HundredGraphs.setAPI()" /></p>';
+			html += '<p>SID_HG: ' + SID_HG + '</p>';
+			html += '<p>If you need support with the plugin, check the thread at <a href="https://community.getvera.com/t/free-graphs-for-your-temp-power-sensors" target=_blank">Vera Community HundredGraphs plugin help</a></p>';
+			html += '<p>or send us a message at <a href="https://www.hundredgraphs.com/about?get=contactForm" target=_blank>HundredGraphs Contact</a></p>';
+			html += '<p>Version: ' + versionHG + '</p>';
+			let check, change;
+			if (Enabled) 
+				check = 'checked', change = 0;
+			else 
+				check = false, change = 1;			
+			//html += '<p>Running: <input type="checkbox" value="' + check + '" onClick="api.setDeviceStatePersistent(device, SID_HG, "Enabled", change, {dynamic: true})"</p>';
+			html += '<p>Running: ' + Enabled + '</p>';
+			if (DevEnable) 
+				check = 'checked', change = 0;
+			else 
+				check = false, change = 1;				
+			//html += '<p>Dev: <input type="checkbox" value="' + check + '" onClick="api.setDeviceStatePersistent(device, SID_HG, "Dev", change, {dynamic: true})"</p>';
+			html += '<p>Dev: ' + DevEnable + '</p>';
+			api.setCpanelContent(html);
+		} catch (e) {
+			Utils.logError('Error in MyPlugin.about(): ' + e);
+		}				
+	}
     function about() {
-        try {              
-            var html = '<p>Read the full docs at <a href="https://www.hundredgraphs.com/apidocs" target=_blank>HundredGraphs API</a></p>';
-            html += '<p><ul>';
-            html += '<li>Grab your API KEY from <a href="https://www.hundredgraphs.com/settings" target=_blank>HG Settings</a> and then set it in Advanced/Variables</li>';
-            html += '<li>Select your devices in tab Devices</li>';
-            html += '<li>Set your reporting interval</li>';
-            html += '<li>If you need any custom devices not preconfigured for you, check <b>Custom Vars</b> tab</li>';
-            html += '<li>Update Node if required (each reporting device, ie Vera, needs its own node)</b> tab</li>';
-            html += '<li>You are all set</li>';
-            html += '</ul></p>';
-            html += '<p>SID_HG: ' + SID_HG + '</p>';
-            html += '<p>If you need support with the plugin, check the thread at <a href="https://community.getvera.com/t/free-graphs-for-your-temp-power-sensors" target=_blank">Vera Community HundredGraphs plugin help</a></p>';
-            html += '<p>or send us a message at <a href="https://www.hundredgraphs.com/about?get=contactForm" target=_blank>HundredGraphs Contact</a></p>';
-            html += '<p>Version: ' + version + '</p>';
-            api.setCpanelContent(html);
-        } catch (e) {
-            Utils.logError('Error in MyPlugin.about(): ' + e);
-        }
+		let res = getDevice();
+		if (!res) {
+			setTimeout(function(){
+				aboutSet();				
+			}, 1000);
+		} else {
+			aboutSet();
+		}
     }
-
+	
     function readCustom(){
         try{
             if (hg_sids && hg_sids.length)
@@ -185,7 +258,7 @@ var HundredGraphs = (function (api) {
         hg_node = api.getDeviceState(device, SID_HG, "DeviceNode") || 1;
         var deviceData;
         try {
-            console.log('HundredGraphs running unpackDeviceData for:', device, 'initial:', hg_deviceData);
+            //console.log('HundredGraphs running unpackDeviceData for:', device, 'initial:', hg_deviceData);
             hg_deviceData = [];
 
             deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
@@ -193,7 +266,7 @@ var HundredGraphs = (function (api) {
                 return console.log('HundredGraphs empty variable for:', device, 'DeviceData:', deviceData, 'dev2:', api.getDeviceState(device, SID_HG, "DeviceData"));
             }                    
             deviceData = deviceData.split(';');
-            console.log('HundredGraphs running unpackDeviceData. deviceData:', deviceData);
+            //console.log('HundredGraphs running unpackDeviceData. deviceData:', deviceData);
             for (var i = 0; i < deviceData.length; i++) {
                 // Get the intervals.
                 var item = {};
@@ -306,6 +379,7 @@ var HundredGraphs = (function (api) {
     }
 
     function customDevices() {
+		getDevice();
         var devsids = readCustom();
         try {
             var html = '';
@@ -379,6 +453,7 @@ var HundredGraphs = (function (api) {
     }      
     
     function showDevices() {
+		getDevice();
         try {
             var html = '';
             //device = device || api.getCpanelDeviceId();
@@ -453,6 +528,8 @@ var HundredGraphs = (function (api) {
     myModule = {
         uuid: uuid,
         about: about,
+        getDevice: getDevice,
+        setAPI: setAPI,
         getListDevices: getListDevices,
         updateEnabled: updateEnabled,
         customDevices: customDevices,

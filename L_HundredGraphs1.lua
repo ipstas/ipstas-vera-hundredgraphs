@@ -200,28 +200,32 @@ local function split(str)
 
 function UpdateStartHG()	
 	local last = luup.variable_get( SID.HG, "running", pdev )
+	last = tonumber(last)
 	Log(' switch was switched. If running: ' .. last)
 	if (last == 0) then
-		local enabled = luup.variable_get( SID.HG, "Enabled", pdev )
-		local dev = luup.variable_get( SID.HG, "Dev", pdev )
-		Log('running: ' .. last .. ', enabled: ' .. enabled .. ', dev enabled: ' .. dev)
-		if (enabled == 1 or dev == 1) then
+		local enabled = luup.variable_get( SID.HG, "Enabled", pdev ) or 0
+		enabled = tonumber(enabled)
+		local devEnabled = luup.variable_get( SID.HG, "Dev", pdev ) or 0
+		devEnabled = tonumber(devEnabled)
+		Log('running: ' .. last .. ', enabled: ' .. enabled .. ', dev enabled: ' .. devEnabled)
+		if (enabled == 1 or devEnabled == 1) then
 			Log('Starting HGTimer')
 			HGTimer()
 		end
 	end
 end
-function UpdateStartVersion()	
+function UpdateStartVersionHG()	
 	version = luup.variable_get( SID.HG, "version", pdev )
 	Log(' version was updated: ' .. version)
+	return version
 end
 
 function UpdateVariablesHG()
 	local deviceData = luup.variable_get(SID.HG, "DeviceData", pdev) 
-	Log( " Watched device data: " .. (deviceData or "empty"))
+	-- Log( " Watched device data: " .. (deviceData or "empty"))
 	if (deviceData == nil or deviceData == '') then return end
 	VARIABLES = split(deviceData)
-	Log( " Updated VARIABLES: " .. dumpTable(VARIABLES))
+	-- Log( " Updated VARIABLES: " .. dumpTable(VARIABLES))
 	-- Log( " Updated VARIABLES2: " .. dumpTable(VARIABLES2))
 end
 
@@ -231,8 +235,10 @@ function UpdateAPIHG()
 end
 
 function UpdateIntervalHG()
-	interval = luup.variable_get(SID.HG, "Interval", pdev)
+	interval = luup.variable_get(SID.HG, "Interval", pdev) or updateInterval
+	interval = tonumber(interval)
 	Log( " Watched Interval: " .. interval )
+	return interval
 end
 
 function UpdateNodeId()
@@ -323,7 +329,7 @@ local function sendRequestHook(events)
 	
 	if enabled == 1 or enabled == '1' then
 		payload = '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"' .. NODE_ID .. '","events":'..events..'}' 	
-		if (DEBUG) then  Log(' enabled: ' .. (enabled or 0) .. ' payload: '.. payload) end
+		-- if (DEBUG) then  Log(' enabled: ' .. (enabled or 0) .. ' payload: '.. payload) end
 
 		res, code1, response_headers, status = http.request{
 			url = SRV_URL_POST,
@@ -407,86 +413,70 @@ function HGTimerOnce()
 	return SendData()
 end
 
-function HGTimer(interval)
+function HGTimer()
 	local code = 0
-	interval = interval or luup.variable_get( SID.HG, "Interval", pdev )
-	if (interval == nil) then
-		interval = updateInterval
-		luup.variable_set( SID.HG, "Interval", interval, pdev )
-	end
-	interval = tonumber(interval)
+
+	Log('HG HGTimer start: ' .. interval .. ' ' .. (luup.variable_get( SID.HG, "Interval", pdev)) or 'empty')
 	
-	API_KEY = luup.variable_get( SID.HG, "API", pdev )
-	local enabled = luup.variable_get(SID.HG, "Enabled", pdev) 
-	local devEnabled = luup.variable_get(SID.HG, "Dev", pdev) 
+	API_KEY = luup.variable_get( SID.HG, "API", pdev ) or 'empty'
+	local enabled = luup.variable_get(SID.HG, "Enabled", pdev) or 0
+	enabled = tonumber(enabled)
+	local devEnabled = luup.variable_get(SID.HG, "Dev", pdev) or 0
+	devEnabled = tonumber(devEnabled)
 		
-	if API_KEY == nil or API_KEY == 'empty' then
-		-- interval = 600
-		-- luup.call_timer("HGTimer", 1, interval, "", interval)	
-		if (DEBUG) then Log('Switched off!!! wrong API key: ' .. (API_KEY or "empty") .. ' for dev #' .. (pdev or 'empty')) end
-		--luup.variable_set( SID.HG, "Enabled", 0, pdev )
-		--luup.variable_set( SID.HG, "running", 0, pdev )
+	if API_KEY == 'empty' then
+		Log('Switched off!!! wrong API key: ' .. API_KEY .. ' for dev #' .. (pdev or 'empty')) 
+		luup.variable_set( SID.HG, "running", 1, pdev )
 		luup.call_timer("HGTimer", 1, interval, "", interval)
 		return
 	else
 		BASE_URL = SRV_URL .. API_KEY
 	end	
 	
-	-- if enabled == 1 or devEnabled == 1 or enabled == '1' or devEnabled == '1' then
-		-- luup.log(' ')
-		-- if (DEBUG) then Log('Switched on. Enabled: ' .. (enabled or 'empty') .. ' Dev: ' .. (devEnabled or 'empty') .. ' for dev #' .. (pdev or 'empty')) end		
-	-- else
-		-- if (DEBUG) then Log('Switched off!!! Enabled: ' .. (enabled or 'empty') .. ' Dev: ' .. (devEnabled or 'empty') .. ' for dev #' .. (pdev or 'empty')) end
-		
-		-- luup.call_timer("HGTimer", 1, interval, "", interval)
-		-- luup.variable_set( SID.HG, "running", 0, pdev )
-		-- return 
-	-- end	
+	if enabled == 0 and devEnabled == 0 then
+		Log('HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled) 
+		luup.variable_set( SID.HG, "running", 0, pdev )		
+		return false;
+	end 
 
-	if enabled == 1 or devEnabled == 1 or enabled == '1' or devEnabled == '1' then
-		count = PopulateVars()
-		if (count > 0) then
-			code = SendData()
-		end
+	count = PopulateVars()
+	if count > 0 then
+		code = SendData()
+	end
 
-		if (code == nil) then
-			Log('server returned empty code') 
-		elseif (code == 204) then
-			--luup.variable_set( SID.HG, "Enabled", 0, pdev )
-			Log(' server returned 204, no data, HGTimer was stopped, check your lua file ') 
-			interval = 100000
-		elseif (code == 401) then
-			--luup.variable_set( SID.HG, "Enabled", 0, pdev )
-			Log(' server returned 401, your API key is wrong, HGTimer was stopped, check your lua file ') 
-			interval = 100000
-		elseif (code ~= 200) then
-			--luup.variable_set( SID.HG, "Enabled", 0, pdev )
-			Log(' unknown send status was returned: ' .. (code or 'empty')) 
-			--interval = 100000		
-		end
-		
-		if (code == 200) then
-			code = 'OK'
-		end
+	if code == nil then
+		Log('server returned empty code') 
+	elseif code == 204 then
+		Log(' server returned 204, no data, HGTimer was stopped, check your lua file ') 
+		interval = 1800
+	elseif code == 401 then
+		Log(' server returned 401, your API key is wrong, HGTimer was stopped, check your lua file ') 
+		interval = 1800
+	elseif (code == 200) then
+		code = 'OK'
+	else
+		Log(' unknown send status was returned: ' .. (code or 'empty')) 
+		interval = 1800
+	end
 
-		if (code ~= httpRes) then
-			httpRes = code
-			luup.variable_set( SID.HG, "lastRun", code, pdev )
-			if (code == 'OK') then
-				local commfailure = luup.variable_get(SID.HG, "CommFailure", pdev) 
-				if (commfailure == "1") then 
-						luup.log("Device "..pdev.." has CommFailure="..commfailure..". set it to 0") 
-						luup.variable_set(SID.HG, "CommFailure", "0", pdev) 
-						luup.call_action(SID.HG, "Reload", {}, 0) 
-				end 
-			end
+	if (code ~= httpRes) then
+		httpRes = code
+		luup.variable_set( SID.HG, "lastRun", code, pdev )
+		if code == 'OK' then
+			local commfailure = luup.variable_get(SID.HG, "CommFailure", pdev) 
+			if commfailure == "1" then 
+					luup.log("Device "..pdev.." has CommFailure="..commfailure..". set it to 0") 
+					luup.variable_set(SID.HG, "CommFailure", "0", pdev) 
+					luup.call_action(SID.HG, "Reload", {}, 0) 
+			end 
 		end
 	end
 	
 	local res = luup.call_timer("HGTimer", 1, interval, "", interval)
-	
-	if (DEBUG) then Log(' next in ' .. interval) end
 	luup.variable_set( SID.HG, "running", 1, pdev )
+	if (DEBUG) then Log(' next in ' .. interval) end
+
+	
 	return true
 end
 
@@ -496,13 +486,16 @@ _G.UpdateVariablesHG = UpdateVariablesHG
 _G.UpdateAPIHG = UpdateAPIHG
 _G.UpdateIntervalHG = UpdateIntervalHG
 _G.UpdateStartHG = UpdateStartHG
+_G.UpdateStartVersionHG = UpdateStartVersionHG
 
 function startup(lul_device)
 	lul_device = lul_device or 514
 	pdev = tonumber(lul_device)
+	version = UpdateStartVersionHG()
+	interval = UpdateIntervalHG()
 
 	local deviceData = luup.variable_get( SID.HG, "DeviceData", pdev ) or ""
-	if (DEBUG) then Log(" current dev data: " .. deviceData) end
+	-- if (DEBUG) then Log(" current dev data: " .. deviceData) end
 	if (deviceData == "" or deviceData == '-') then
 		VARIABLES = {}
 		-- Get the list of power meters.
@@ -526,7 +519,7 @@ function startup(lul_device)
 		-- Log(' Created initial deviceData: ' .. deviceData)
 	else
 		UpdateVariablesHG()
-		luup.log("HundredGraphs: existing deviceData: " .. deviceData .. " VARS: " .. dumpTable(VARIABLES))
+		-- luup.log("HundredGraphs: existing deviceData: " .. deviceData .. " VARS: " .. dumpTable(VARIABLES))
 	end
 
 	-- UpdateDeviceDataHG()
@@ -543,6 +536,8 @@ function startup(lul_device)
 		Log('Initial API_KEY: ' .. API_KEY)
 	end	
 	BASE_URL = SRV_URL .. API_KEY
+	
+	if (DEBUG) then Log(" Started with version " .. version) end
 
 	luup.variable_watch("UpdateVariablesHG", SID.HG, "DeviceData", pdev)
 	luup.variable_watch("UpdateVariablesHG", SID.HG, "DeviceData2", pdev)
@@ -550,7 +545,7 @@ function startup(lul_device)
 	luup.variable_watch("UpdateIntervalHG", SID.HG, "Interval", pdev)
 	luup.variable_watch("UpdateStartHG", SID.HG, "Enabled", pdev)
 	luup.variable_watch("UpdateStartHG", SID.HG, "Dev", pdev)
-	luup.variable_watch("UpdateStartVersion", SID.HG, "version", pdev)
+	luup.variable_watch("UpdateStartVersionHG", SID.HG, "version", pdev)
 	luup.variable_watch("UpdateDeviceNode", SID.HG, "DeviceNode", pdev)
 	
 	-- Log(' Started from plugin, ' .. SID.HG .. ' dev: ' .. (pdev  or "empty") .. ' enabled: ' .. (enabled or 'disabled') .. ' API_KEY: ' .. API_KEY)  
@@ -559,7 +554,7 @@ function startup(lul_device)
 end
 
 if (DEBUG) then Log(" *********************************************** ") end
-if (DEBUG) then Log(" Started with version " .. version) end
+
 
 -- startup()
 
