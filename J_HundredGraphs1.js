@@ -103,7 +103,7 @@ var HundredGraphs = (function (api) {
 			Enabled = parseInt(Enabled);
 			DevEnable = parseInt(DevEnable);
 			versionHG = api.getDeviceState(device, SID_HG, "version");		
-			console.log('HG about:', device, SID_HG, API, Enabled, DevEnable, versionHG);
+			console.log('HG about device:', device, SID_HG, 'API:', API, 'enabled:', Enabled, 'devenabled:', DevEnable, 'version:', versionHG);
 			var html = '<p>Read the full docs at <a href="https://www.hundredgraphs.com/apidocs" target=_blank>HundredGraphs API</a></p>';
 			html += '<p><ul>';
 			html += '<li>Grab your API KEY from <a href="https://www.hundredgraphs.com/settings" target=_blank>HG Settings</a> and then set it here</li>';

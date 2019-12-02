@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '2.7'
+local version = '2.8'
 
 local ltn12 = require("ltn12")
 local library	= require "L_HundredGraphsLibrary"
@@ -235,7 +235,12 @@ function UpdateAPIHG()
 end
 
 function UpdateIntervalHG()
-	interval = luup.variable_get(SID.HG, "Interval", pdev) or updateInterval
+	interval = luup.variable_get(SID.HG, "Interval", pdev) or ''
+	if interval == ''
+	then
+		luup.variable_set( SID.HG, "Interval", 600, pdev )		
+		interval = 600
+	end
 	interval = tonumber(interval)
 	Log( " Watched Interval: " .. interval )
 	return interval
@@ -415,8 +420,8 @@ end
 
 function HGTimer()
 	local code = 0
-
-	Log('HG HGTimer start: ' .. interval .. ' ' .. (luup.variable_get( SID.HG, "Interval", pdev)) or 'empty')
+	local int = luup.variable_get( SID.HG, "Interval", pdev) or 'empty'
+	Log('HG HGTimer start: ' .. interval .. ' ' .. int)
 	
 	API_KEY = luup.variable_get( SID.HG, "API", pdev ) or 'empty'
 	local enabled = luup.variable_get(SID.HG, "Enabled", pdev) or 0
