@@ -1,4 +1,4 @@
-var versionHG = "2.6";
+var versionHG = "...";
 
 var HundredGraphs = (function (api) {
     let myModule = {};   
@@ -72,6 +72,7 @@ var HundredGraphs = (function (api) {
 		if (device) return; 
 		try{
 			device = device || api.getCpanelDeviceId();
+			versionHG = api.getDeviceState(device, SID_HG, "version");
 			API = api.getDeviceState(device, SID_HG, "API");
 			Enabled = api.getDeviceState(device, SID_HG, "Enabled");
 			DevEnable = api.getDeviceState(device, SID_HG, "Dev");

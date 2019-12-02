@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = ''
+local version = '2.7'
 
 local ltn12 = require("ltn12")
 local library	= require "L_HundredGraphsLibrary"
@@ -215,7 +215,7 @@ function UpdateStartHG()
 	end
 end
 function UpdateStartVersionHG()	
-	version = luup.variable_get( SID.HG, "version", pdev )
+	version = luup.variable_get( SID.HG, "version", pdev ) or ''
 	Log(' version was updated: ' .. version)
 	return version
 end
@@ -491,8 +491,9 @@ _G.UpdateStartVersionHG = UpdateStartVersionHG
 function startup(lul_device)
 	lul_device = lul_device or 514
 	pdev = tonumber(lul_device)
-	version = UpdateStartVersionHG()
+	-- version = UpdateStartVersionHG()
 	interval = UpdateIntervalHG()
+	luup.variable_set(SID.HG, "version", version, pdev) 
 
 	local deviceData = luup.variable_get( SID.HG, "DeviceData", pdev ) or ""
 	-- if (DEBUG) then Log(" current dev data: " .. deviceData) end
@@ -545,7 +546,7 @@ function startup(lul_device)
 	luup.variable_watch("UpdateIntervalHG", SID.HG, "Interval", pdev)
 	luup.variable_watch("UpdateStartHG", SID.HG, "Enabled", pdev)
 	luup.variable_watch("UpdateStartHG", SID.HG, "Dev", pdev)
-	luup.variable_watch("UpdateStartVersionHG", SID.HG, "version", pdev)
+	--luup.variable_watch("UpdateStartVersionHG", SID.HG, "version", pdev)
 	luup.variable_watch("UpdateDeviceNode", SID.HG, "DeviceNode", pdev)
 	
 	-- Log(' Started from plugin, ' .. SID.HG .. ' dev: ' .. (pdev  or "empty") .. ' enabled: ' .. (enabled or 'disabled') .. ' API_KEY: ' .. API_KEY)  
