@@ -308,23 +308,30 @@ var HundredGraphs = (function (api) {
 
     function packDeviceData(){
         //console.log('{HundredGraphs packDeviceData} hg_deviceData: ', hg_deviceData);
-        hg_node = document.getElementById("deviceNode").value;
-        api.setDeviceStatePersistent(device, SID_HG, "DeviceNode", hg_node);
-        var deviceData = '';
-		var html = '';
-		html += '<div class="favorites_device_busy_device_overlay"><div class="round_loading deviceCpanelBusySpinner"></div></div>';
-        api.setCpanelContent(html);       
-        for (let item of hg_deviceData){
-            //console.log('{HundredGraphs packDeviceData} item: ', item);
-            deviceData = deviceData + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ';';
-        }
-        //console.log('{HundredGraphs packDeviceData} deviceData: ', deviceData);
-		function onSuccess(){
-			//console.log('{HundredGraphs packDeviceData} deviceData saved: ', true);
-			showDevices();		
+		try{
+			hg_node = document.getElementById("deviceNode").value;
+			api.setDeviceStatePersistent(device, SID_HG, "DeviceNode", hg_node);
+			var deviceData = '';
+			var html = '';
+			html += '<div class="favorites_device_busy_device_overlay"><div class="round_loading deviceCpanelBusySpinner"></div></div>';
+			api.setCpanelContent(html);       
+			for (let item of hg_deviceData){
+				//console.log('{HundredGraphs packDeviceData} item: ', item);
+				deviceData = deviceData + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ';';
+			}
+			//console.log('{HundredGraphs packDeviceData} deviceData: ', deviceData);
+			function onSuccess(){
+				//console.log('{HundredGraphs packDeviceData} onSuccess deviceData saved:', true);
+				showDevices();		
+			}
+			function onFailure(){
+				console.log('{HundredGraphs packDeviceData} onFailure deviceData saved:', false);
+			}
+			api.setDeviceStatePersistent(device, SID_HG, "DeviceData", deviceData, {onSuccess: onSuccess, onFailure: onFailure});			
+			return true;
+		}catch(err){
+			console.warn('{HundredGraphs packDeviceData} err:', err);
 		}
-        api.setDeviceStatePersistent(device, SID_HG, "DeviceData", deviceData, {onSuccess: onSuccess});			
-		return true;
     }
  
     function resetSID_ALL(){
@@ -506,6 +513,10 @@ var HundredGraphs = (function (api) {
                 html += '<input type="button" class="btn btn-success" value="Save" onClick="HundredGraphs.packDeviceData()"/>&nbsp';
                 html += '<input type="button" class="btn btn-danger" value="Reset" onClick="HundredGraphs.resetDevices()" />';
                 html += '</p>';  
+				if (!deviceData || deviceData == ""){			
+					html += '<p id="status_data" style="width:90%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:red">Devices are not saved</p>';	
+					console.log('HG deviceData:', deviceData);
+				}
             } else {
                 var deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
                 //getListDevices();

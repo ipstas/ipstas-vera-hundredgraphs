@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '2.8'
+local version = '2.9'
 
 local ltn12 = require("ltn12")
 local library	= require "L_HundredGraphsLibrary"
@@ -121,7 +121,7 @@ local VARIABLES2 = {
 -- You shouldn't need to change anything below this line --
 
 local updateInterval = 600
-local interval = 600
+local interval = 'empty'
 local httpRes = 0
 
 local count = 0
@@ -198,6 +198,20 @@ local function split(str)
 	return tbl	
  end
 
+function initHG()
+	local enabled = luup.variable_get( SID.HG, "Enabled", pdev )
+	if enabled == nil then
+		luup.variable_set( SID.HG, "Enabled", 0, pdev )
+	end
+	local devEnabled = luup.variable_get( SID.HG, "Dev", pdev )
+	if devEnabled == nil then
+		luup.variable_set( SID.HG, "Enabled", 0, pdev )
+	end
+	local ver = luup.variable_get( SID.HG, "version", pdev ) or 'empty'
+	if ver ~= version then
+		luup.variable_set(SID.HG, "version", version, pdev)
+	end
+end
 function UpdateStartHG()	
 	local last = luup.variable_get( SID.HG, "running", pdev )
 	last = tonumber(last)
@@ -235,14 +249,23 @@ function UpdateAPIHG()
 end
 
 function UpdateIntervalHG()
-	interval = luup.variable_get(SID.HG, "Interval", pdev) or ''
-	if interval == ''
-	then
-		luup.variable_set( SID.HG, "Interval", 600, pdev )		
-		interval = 600
-	end
-	interval = tonumber(interval)
-	Log( " Watched Interval: " .. interval )
+	local int = luup.variable_get(SID.HG, "Interval", pdev) or 'empty'
+	-- if interval == ''
+	-- then
+		-- luup.variable_set( SID.HG, "Interval", 600, pdev )		
+		-- interval = 600
+	-- end
+	interval = tonumber(int) or 'empty'
+	if interval == 'empty' then
+		Log( " Setting Interval (wrong): " .. interval .. ' int: ' .. int)
+	elseif (interval < 60) then
+		interval = 'empty'
+		Log( " Setting Interval (wrong): " .. interval .. ' int: ' .. int)
+		luup.variable_set(SID.HG, "Interval", interval, pdev)
+	else
+		Log( " Setting Interval (right): " .. interval .. ' int: ' .. int)
+	end	
+	Log( " Watched Interval: " .. interval .. ' int: ' .. int)
 	return interval
 end
 
@@ -431,18 +454,21 @@ function HGTimer()
 		
 	if API_KEY == 'empty' then
 		Log('Switched off!!! wrong API key: ' .. API_KEY .. ' for dev #' .. (pdev or 'empty')) 
-		luup.variable_set( SID.HG, "running", 1, pdev )
-		luup.call_timer("HGTimer", 1, interval, "", interval)
-		return
+		Log('HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled) 
+		luup.variable_set( SID.HG, "running", 0, pdev )
+		--luup.call_timer("HGTimer", 1, interval, "", interval)
+		return false
+	elseif interval == 'empty' then
+		Log('HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled) 
+		luup.variable_set( SID.HG, "running", 0, pdev )		
+		return false
+	elseif enabled == 0 and devEnabled == 0 then
+		Log('HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled) 
+		luup.variable_set( SID.HG, "running", 0, pdev )		
+		return false
 	else
 		BASE_URL = SRV_URL .. API_KEY
 	end	
-	
-	if enabled == 0 and devEnabled == 0 then
-		Log('HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled) 
-		luup.variable_set( SID.HG, "running", 0, pdev )		
-		return false;
-	end 
 
 	count = PopulateVars()
 	if count > 0 then
@@ -453,15 +479,15 @@ function HGTimer()
 		Log('server returned empty code') 
 	elseif code == 204 then
 		Log(' server returned 204, no data, HGTimer was stopped, check your lua file ') 
-		interval = 1800
+		--interval = 1800
 	elseif code == 401 then
 		Log(' server returned 401, your API key is wrong, HGTimer was stopped, check your lua file ') 
-		interval = 1800
+		--interval = 1800
 	elseif (code == 200) then
 		code = 'OK'
 	else
 		Log(' unknown send status was returned: ' .. (code or 'empty')) 
-		interval = 1800
+		--interval = 1800
 	end
 
 	if (code ~= httpRes) then
@@ -481,7 +507,6 @@ function HGTimer()
 	luup.variable_set( SID.HG, "running", 1, pdev )
 	if (DEBUG) then Log(' next in ' .. interval) end
 
-	
 	return true
 end
 
@@ -494,12 +519,12 @@ _G.UpdateStartHG = UpdateStartHG
 _G.UpdateStartVersionHG = UpdateStartVersionHG
 
 function startup(lul_device)
-	lul_device = lul_device or 514
+	lul_device = lul_device
 	pdev = tonumber(lul_device)
 	-- version = UpdateStartVersionHG()
+	initHG()
 	interval = UpdateIntervalHG()
-	luup.variable_set(SID.HG, "version", version, pdev) 
-
+		
 	local deviceData = luup.variable_get( SID.HG, "DeviceData", pdev ) or ""
 	-- if (DEBUG) then Log(" current dev data: " .. deviceData) end
 	if (deviceData == "" or deviceData == '-') then
@@ -508,7 +533,7 @@ function startup(lul_device)
 		-- for devNum, devAttr in pairs( luup.devices ) do		
 			-- local val = luup.variable_get(SID.PM, SRV.PM, devNum)
 			-- if (val ~= nil) then	
-				local desc = luup.variable_get(SID.PM, "description", devNum)			
+				-- local desc = luup.variable_get(SID.PM, "description", devNum)			
 				-- Log("Device #" .. devAttr.id .. " desc: " .. devAttr.description .. " KWH:" .. val)
 				-- local item = {}
 				-- item.type = 'PM'
