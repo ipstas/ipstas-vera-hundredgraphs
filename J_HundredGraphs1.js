@@ -108,7 +108,7 @@ var HundredGraphs = (function (api) {
 			html += '<p><ul>';
 			html += '<li>Grab your API KEY from <a href="https://www.hundredgraphs.com/settings" target=_blank>HG Settings</a> and then set it here</li>';
 			html += '<li>Select your devices in tab Devices</li>';
-			html += '<li>Set your reporting interval</li>';
+			html += '<li>Set your reporting interval (600+ sec for free account or 60+ sec if you have paid)</li>';
 			html += '<li>If you need any custom devices not preconfigured for you, check <b>Custom Vars</b> tab</li>';
 			html += '<li>Update Node if required (each reporting hub, ie Vera, needs its own node)</b> tab</li>';
 			html += '<li>You are all set</li>';
