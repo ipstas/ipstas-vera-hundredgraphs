@@ -78,8 +78,6 @@ var HundredGraphs = (function (api) {
 			DevEnable = api.getDeviceState(device, SID_HG, "Dev");
 			if ((!DevEnable || DevEnable == '') && device)
 				api.setDeviceStatePersistent(device, SID_HG, "Dev", 0, {dynamic: true});
-			if (device)
-				api.setDeviceStatePersistent(device, SID_HG, "version", versionHG, {dynamic: true});
 			console.log('HG getDevice:', device, SID_HG, Enabled, DevEnable, versionHG);
 		}catch(e){
 			Utils.logError('Error in MyPlugin.getDevice(): ' + e);

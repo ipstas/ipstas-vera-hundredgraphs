@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '2.9'
+local version = '2.10'
 
 local ltn12 = require("ltn12")
 local library	= require "L_HundredGraphsLibrary"
@@ -351,14 +351,14 @@ local function sendRequestHook(events)
 	local response_body2 = {}
 	local res, code, code1, code2, response_headers, status, payload
 	
+	local hubId = luup.pk_accesspoint
 
 	local enabled = luup.variable_get(SID.HG, "Enabled", pdev) 
 	NODE_ID = NODE_ID or luup.variable_get(SID.HG, "DeviceNode", pdev)  or 1
+	payload = '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","hubId":"' .. hubId ..'","interval":"'.. interval .. '","node":"' .. NODE_ID .. '","events":'..events..'}' 	
 	
 	if enabled == 1 or enabled == '1' then
-		payload = '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"' .. NODE_ID .. '","events":'..events..'}' 	
-		-- if (DEBUG) then  Log(' enabled: ' .. (enabled or 0) .. ' payload: '.. payload) end
-
+		Log(' prod enabled: ' .. (enabled or empty))
 		res, code1, response_headers, status = http.request{
 			url = SRV_URL_POST,
 			method = "POST",
@@ -379,9 +379,7 @@ local function sendRequestHook(events)
 	local devEnabled = luup.variable_get(SID.HG, "Dev", pdev) 
 	
 	if devEnabled == 1 or devEnabled == '1' then
-		payload = payload or '{"apiKey":"' .. API_KEY .. '","app":"Vera","version":"'.. version .. '","node":"' .. NODE_ID .. '","events":'..events..'}' 
-		Log(' dev: ' .. (devEnabled or empty))
-		response_body2 = {}
+		Log(' dev enabled: ' .. (devEnabled or empty))
 		res, code2, response_headers, status = https.request{
 			url = DEV_URL_POST,
 			method = "POST",
@@ -392,7 +390,7 @@ local function sendRequestHook(events)
 			source = ltn12.source.string(payload),
 			sink = ltn12.sink.table(response_body2)
 		}	
-		Log('Post response DEV code = ' .. code2 .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat((response_body2 or {})) .. '\n')
+		Log('Post response DEV code = ' .. DEV_URL_POST .. ' ' .. code2 .. '   status = ' .. (status or 'empty').. ' response body: = ' .. table.concat((response_body2 or {})) .. '\n')
 		if (code2 ~= 200) then
 			Log('Dev Payload was: ' .. payload)
 		end
@@ -404,6 +402,7 @@ local function sendRequestHook(events)
 
 	return code
 end	
+
 
 local function sendRequestOld(data)
 	
@@ -453,40 +452,60 @@ function HGTimer()
 	devEnabled = tonumber(devEnabled)
 		
 	if API_KEY == 'empty' then
-		Log('Switched off!!! wrong API key: ' .. API_KEY .. ' for dev #' .. (pdev or 'empty')) 
+		code = 'Switched off!!! wrong API key: ' .. API_KEY .. ' for dev #' .. (pdev or 'empty')
+		Log(code) 
 		Log('HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled) 
+		luup.variable_set( SID.HG, "lastRun", code, pdev )
 		luup.variable_set( SID.HG, "running", 0, pdev )
-		--luup.call_timer("HGTimer", 1, interval, "", interval)
 		return false
 	elseif interval == 'empty' then
-		Log('HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled) 
+		code = 'HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled
+		Log(code) 
+		luup.variable_set( SID.HG, "lastRun", code, pdev )
 		luup.variable_set( SID.HG, "running", 0, pdev )		
 		return false
 	elseif enabled == 0 and devEnabled == 0 then
-		Log('HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled) 
+		code = 'HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled
+		Log(code) 
+		luup.variable_set( SID.HG, "lastRun", code, pdev )
 		luup.variable_set( SID.HG, "running", 0, pdev )		
 		return false
-	else
-		BASE_URL = SRV_URL .. API_KEY
-	end	
-
-	count = PopulateVars()
+	end
+		
+	BASE_URL = SRV_URL .. API_KEY
+	count = PopulateVars() 
+	
 	if count > 0 then
 		code = SendData()
+	else
+		code = ' No data to report'
+		Log(code) 
+		luup.variable_set( SID.HG, "lastRun", code, pdev )
+		return false
 	end
 
-	if code == nil then
+	if (code == 200) then
+		code = 'OK'
+	elseif code == nil then
 		Log('server returned empty code') 
 	elseif code == 204 then
-		Log(' server returned 204, no data, HGTimer was stopped, check your lua file ') 
-		--interval = 1800
+		code = ' server returned 204 (no data), interval was updated to once a day. Update reporting sensors and restart a plugin'
+		Log(code) 
+		updateInterval = interval
+		interval = 86400000
 	elseif code == 401 then
-		Log(' server returned 401, your API key is wrong, HGTimer was stopped, check your lua file ') 
-		--interval = 1800
-	elseif (code == 200) then
-		code = 'OK'
+		code = ' server returned 401, your API key is wrong, interval was updated to once a day. Update reporting sensors and restart a plugin'
+		Log(code) 
+		updateInterval = interval
+		interval = 86400000
+	elseif code == 402 then
+		code = ' server returned 402, you are using extended features requiring payment. Reporting interval was switched to 600 secs'
+		Log(code) 
+		updateInterval = interval
+		interval = 600
 	else
-		Log(' unknown send status was returned: ' .. (code or 'empty')) 
+		code = ' unknown send status was returned: ' .. (code or 'empty') 
+		Log(code) 
 		--interval = 1800
 	end
 
@@ -496,9 +515,9 @@ function HGTimer()
 		if code == 'OK' then
 			local commfailure = luup.variable_get(SID.HG, "CommFailure", pdev) 
 			if commfailure == "1" then 
-					luup.log("Device "..pdev.." has CommFailure="..commfailure..". set it to 0") 
-					luup.variable_set(SID.HG, "CommFailure", "0", pdev) 
-					luup.call_action(SID.HG, "Reload", {}, 0) 
+				luup.log("Device "..pdev.." has CommFailure="..commfailure..". set it to 0") 
+				luup.variable_set(SID.HG, "CommFailure", "0", pdev) 
+				luup.call_action(SID.HG, "Reload", {}, 0) 
 			end 
 		end
 	end
