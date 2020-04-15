@@ -442,6 +442,7 @@ end
 
 function HGTimer()
 	local code = 0
+	local showcode = ''
 	local int = luup.variable_get( SID.HG, "Interval", pdev) or 'empty'
 	Log('HG HGTimer start: ' .. interval .. ' ' .. int)
 	
@@ -455,19 +456,19 @@ function HGTimer()
 		code = 'Switched off!!! wrong API key: ' .. API_KEY .. ' for dev #' .. (pdev or 'empty')
 		Log(code) 
 		Log('HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled) 
-		luup.variable_set( SID.HG, "lastRun", code, pdev )
+		luup.variable_set( SID.HG, "lastRun", showcode, pdev )
 		luup.variable_set( SID.HG, "running", 0, pdev )
 		return false
 	elseif interval == 'empty' then
 		code = 'HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled
 		Log(code) 
-		luup.variable_set( SID.HG, "lastRun", code, pdev )
+		luup.variable_set( SID.HG, "lastRun", showcode, pdev )
 		luup.variable_set( SID.HG, "running", 0, pdev )		
 		return false
 	elseif enabled == 0 and devEnabled == 0 then
 		code = 'HGTimes is off. enabled: ' .. enabled .. ' dev: ' .. devEnabled
 		Log(code) 
-		luup.variable_set( SID.HG, "lastRun", code, pdev )
+		luup.variable_set( SID.HG, "lastRun", showcode, pdev )
 		luup.variable_set( SID.HG, "running", 0, pdev )		
 		return false
 	end
@@ -478,41 +479,37 @@ function HGTimer()
 	if count > 0 then
 		code = SendData()
 	else
-		code = ' No data to report'
+		showcode = ' No data to report'
 		Log(code) 
-		luup.variable_set( SID.HG, "lastRun", code, pdev )
+		luup.variable_set( SID.HG, "lastRun", showcode, pdev )
 		return false
 	end
 
 	if (code == 200) then
-		code = 'OK'
+		showcode = 'OK'
 	elseif code == nil then
-		Log('server returned empty code') 
+		showcode = 'server returned empty code' 
 	elseif code == 204 then
-		code = ' server returned 204 (no data), interval was updated to once a day. Update reporting sensors and restart a plugin'
-		Log(code) 
+		showcode = ' server returned 204 (no data), interval was updated to once a day. Update reporting sensors and restart a plugin'
 		updateInterval = interval
 		interval = 86400000
 	elseif code == 401 then
-		code = ' server returned 401, your API key is wrong, interval was updated to once a day. Update reporting sensors and restart a plugin'
-		Log(code) 
+		showcode = ' server returned 401, your API key is wrong, interval was updated to once a day. Update reporting sensors and restart a plugin'
 		updateInterval = interval
 		interval = 86400000
 	elseif code == 402 then
-		code = ' server returned 402, you are using extended features requiring payment. Reporting interval was switched to 600 secs'
-		Log(code) 
+		showcode = ' server returned 402, you are using extended features requiring payment. Reporting interval was switched to 600 secs'
 		updateInterval = interval
 		interval = 600
 	else
-		code = ' unknown send status was returned: ' .. (code or 'empty') 
-		Log(code) 
-		--interval = 1800
+		showcode = ' unknown send status was returned: ' .. (code or 'empty') 
 	end
+	Log(showcode) 
 
 	if (code ~= httpRes) then
 		httpRes = code
-		luup.variable_set( SID.HG, "lastRun", code, pdev )
-		if code == 'OK' then
+		luup.variable_set( SID.HG, "lastRun", showcode, pdev )
+		if code == 200 then
 			local commfailure = luup.variable_get(SID.HG, "CommFailure", pdev) 
 			if commfailure == "1" then 
 				luup.log("Device "..pdev.." has CommFailure="..commfailure..". set it to 0") 
