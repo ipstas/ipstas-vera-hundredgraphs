@@ -48,14 +48,44 @@ var HundredGraphs = (function (api) {
             serviceVar: "CurrentLevel",
         },
         {
+            type: 'LUX',
+            serviceId: "urn:micasaverde-com:serviceId:LightSensor1",
+            serviceVar: "CurrentLevel",
+        },
+        {
             type: 'THM',
             serviceId: "urn:micasaverde-com:serviceId:HVAC_OperatingState1",
             serviceVar: "ModeState",
         },
         {
+            type: 'FAN',
+            serviceId: "urn:upnp-org:serviceId:HVAC_FanOperatingMode1",
+            serviceVar: "FanStatus",
+        },
+        {
             type: 'LOCK',
             serviceId: "urn:micasaverde-com:serviceId:DoorLock1",
             serviceVar: "Status",
+        },
+        {
+            type: 'BTR',
+            serviceId: "urn:micasaverde-com:serviceId:HaDevice1",
+            serviceVar: "BatteryLevel",
+        },
+        {
+            type: 'SYS1',
+            serviceId: "urn:cd-jackson-com:serviceId:SystemMonitor",
+            serviceVar: "uptimeTotal",
+        },
+        {
+            type: 'SYS2',
+            serviceId: "urn:cd-jackson-com:serviceId:SystemMonitor",
+            serviceVar: "memoryFree",
+        },
+        {
+            type: 'SYS3',
+            serviceId: "urn:cd-jackson-com:serviceId:SystemMonitor",
+            serviceVar: "cpuLoad1",
         },
     ];
 
@@ -65,6 +95,7 @@ var HundredGraphs = (function (api) {
 
     
     let Enabled = 0;
+    let ServerResponse = 'no response yet';
     let DevEnable =  0;
 	//console.log('HG start:', device, SID_HG, Enabled, DevEnable, versionHG);
 	
@@ -97,6 +128,7 @@ var HundredGraphs = (function (api) {
 	function aboutSet(){
 		try {
 			Enabled = api.getDeviceState(device, SID_HG, "Enabled") || 0;
+			ServerResponse = api.getDeviceState(device, SID_HG, "ServerResponse") || 0;
 			DevEnable = api.getDeviceState(device, SID_HG, "Dev") || 0;
 			Enabled = parseInt(Enabled);
 			DevEnable = parseInt(DevEnable);
@@ -123,6 +155,7 @@ var HundredGraphs = (function (api) {
 				check = false, change = 1;			
 			//html += '<p>Running: <input type="checkbox" value="' + check + '" onClick="api.setDeviceStatePersistent(device, SID_HG, "Enabled", change, {dynamic: true})"</p>';
 			html += '<p>Running: ' + Enabled + '</p>';
+			html += '<p>Server Response: ' + ServerResponse + '</p>';
 			if (DevEnable) 
 				check = 'checked', change = 0;
 			else 
@@ -364,19 +397,21 @@ var HundredGraphs = (function (api) {
         api.setDeviceStatePersistent(device, SID_HG, "SidData", deviceData, {onSuccess: onSuccess});			
     }
     function addSID(){        
-        let item = {};
-        item.type = 'Custom';
+        let item = {};    
         item.serviceVar = document.getElementById("serviceVar").value;			
         item.serviceId = document.getElementById("serviceId").value;
+		item.type = item.serviceVar;
+		//item.type = 'Custom';
         hg_sids.push(item);			
         return packSID_ALL();
     }
     function delSID(){
         //console.log('{HundredGraphs addSID} SID_ALL: ', SID_ALL);
-        let item = {};
-        item.type = 'Custom';
+        let item = {};      
         item.serviceVar = document.getElementById("serviceVar").value;			
         item.serviceId = document.getElementById("serviceId").value;
+		item.type = item.serviceVar;
+		//item.type = 'Custom';
         hg_sids.push(item);			
         customDevices();
 		return true;
