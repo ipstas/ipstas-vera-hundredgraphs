@@ -137,7 +137,7 @@
 					//"Height": 24,
 					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
 					"Variable": "Interval",
-					"Value": "1"
+					"Value": "610"
 				},
 				"Command": {
 					"Service": "urn:hundredgraphs-com:serviceId:HundredGraphs1",
@@ -251,10 +251,21 @@
 				},
 				"Label": {
 					"lang_tag": "hundredgraphs_about",
-					"text": "<p>HundredGraphs logger &#169; 2019 HundredGraphs, All Rights Reserved.<br/><b><a href=\"https://www.hundredgraphs.com\">HundredGraphs</a>. </p>"
+					"text": "<p>HundredGraphs logger &#169; 2019-2021 HundredGraphs, All Rights Reserved.<br/><b><a href=\"https://www.hundredgraphs.com\">HundredGraphs</a>. </p>"
 				}
 			}
 		]
+	},
+	{
+		"Label": {
+			"lang_tag": "hg_energy",
+			"text": "Energy"
+		},
+		"Position": 1,
+		"TopNavigationTab": 1,
+		"TabType": "javascript",
+		"ScriptName": "J_HundredGraphs1.js",
+		"Function": "HundredGraphs.energyHG"
 	},
 	{
 		"Label": {

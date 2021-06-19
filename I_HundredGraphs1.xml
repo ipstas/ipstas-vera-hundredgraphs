@@ -3,8 +3,12 @@
 <implementation>
 	<specVersion>
 		<major>1</major>
-		<minor>0</minor>
+		<minor>5</minor>
 	</specVersion>
+	<settings>
+		<protocol>cr</protocol>
+	</settings>
+	<startup>main</startup>
 	<functions>
 		local MIN_VERSION = 111183
 
