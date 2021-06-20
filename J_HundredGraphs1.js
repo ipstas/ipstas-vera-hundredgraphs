@@ -419,26 +419,53 @@ var HundredGraphs = (function (api) {
 				if (item?.deviceId)
 					deviceData = deviceData + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ',burst=' + item.burst + ';\n';
 			}
-			//console.log('{HundredGraphs packDeviceData} deviceData: ', deviceData);
-			function onSuccess(){
+			function htmlSuccess(){
+				html += '<p id="status_data" style="width:90%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:red">Devices are NOT saved</p>';
+				html += '<input type="button" class="btn btn-warning" value="Try Again" onClick="HundredGraphs.showDevices()"/>';
+				//alert('Devices save failed')
+				api.setCpanelContent(html); 
+				console.log('{HundredGraphs packDeviceData} onFailure deviceData saved:', false);
+				//showDevices();				
+			}
+			function htmlFailure(){
 				//console.log('{HundredGraphs packDeviceData} onSuccess deviceData saved:', true);
 				html += '<p id="status_data" style="width:90%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:blue">';
 				html += 'Devices are saved ';
 				html += '<input type="button" class="btn btn-success" value="OK" onClick="HundredGraphs.showDevices()"/>';				
 				html += '</p>';
 				
-				api.setCpanelContent(html); 
-				// showDevices();		
-				//wget 'http://localhost/port_3480/data_request?id=lu_reload'
+				api.setCpanelContent(html); 			
+			}
+			//console.log('{HundredGraphs packDeviceData} deviceData: ', deviceData);
+			function reiterate(){
+				n++;
+				let savedData = api.getDeviceState(device, SID_HG, "DeviceData"));
+				console.log('[saving data'
+				if (savedData == deviceData) {
+					htmlSuccess()
+				} else if (n > 100) {
+					htmlFailure()
+				}				
+			}
+			function stopIt(intervalId){
+				clearInterval(intervalId);
+				if (savedData == deviceData) 
+					htmlSuccess()
+				else 
+					htmlFailure()					
+			}
+			function onSuccess(){
+				htmlSuccess()
 			}
 			function onFailure(){
-				html += '<p id="status_data" style="width:90%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:red">Devices are NOT saved</p>';
-				html += '<input type="button" class="btn btn-warning" value="Try Again" onClick="HundredGraphs.showDevices()"/>';
-				//alert('Devices save failed')
-				api.setCpanelContent(html); 
-				console.log('{HundredGraphs packDeviceData} onFailure deviceData saved:', false);
-				//showDevices();	
+				let n = 0				
+				let savedData = api.getDeviceState(device, SID_HG, "DeviceData"));
+				if (savedData == deviceData)
+					return; 
+				var intervalId = setInterval(reiterate(), 5000);
+				setTimeout(stopIt(intervalId), 60000);					
 			}
+		
 			api.setDeviceStatePersistent(device, SID_HG, "DeviceData", deviceData, {onSuccess: onSuccess, onFailure: onFailure});			
 			return true;
 		}catch(err){
