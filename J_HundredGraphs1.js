@@ -116,9 +116,17 @@ var HundredGraphs = (function (api) {
 		}
 	}
 	function setAPI(){
+
 		try{
+			function onSuccess(){
+				console.log('[setAPI] success', API, api.getDeviceState(device, SID_HG, "API"));
+			}
+			function onFailure(){
+				console.warn('[setAPI] failed', API, api.getDeviceState(device, SID_HG, "API"));				
+			}
 			API = document.getElementById("setAPI").value;
-			api.setDeviceStatePersistent(device, SID_HG, "API", API, {dynamic: true});
+			api.setDeviceStatePersistent(device, SID_HG, "API", API, {dynamic: true, onSuccess: onSuccess, onFailure: onFailure});
+
 			about();
 			//console.log('HG getDevice:', device, SID_HG, enabled, devEnabled, versionHG);
 		}catch(e){
@@ -360,7 +368,7 @@ var HundredGraphs = (function (api) {
         hg_node = api.getDeviceState(device, SID_HG, "DeviceNode") || 1;
         var deviceData;
         try {
-            //console.log('HundredGraphs running unpackDeviceData for:', device, 'initial:', hg_deviceData);
+            console.log('HundredGraphs running unpackDeviceData for:', device, 'initial:', hg_deviceData);
             hg_deviceData = [];
 
             deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
