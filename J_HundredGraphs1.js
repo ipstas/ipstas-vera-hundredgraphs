@@ -642,7 +642,7 @@ var HundredGraphs = (function (api) {
         try {
             html = '<p id="state" style="display:none;">' + stateHG + '</p>';
             //device = device || api.getCpanelDeviceId();
-            //if (!hg_deviceData.length)
+            if (!hg_deviceData.length)
 				unpackDeviceData(device);
 			hg_deviceData = hg_deviceData.sort(function(a, b) {
 				return (b.key.toUpperCase() - a.key.toUpperCase() || b.type - a.type);
