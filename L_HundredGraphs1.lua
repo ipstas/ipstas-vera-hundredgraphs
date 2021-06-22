@@ -928,7 +928,7 @@ _G.errorhandlerHG = errorhandlerHG
 function startup(lul_device)
 	lul_device = lul_device
 	pdev = tonumber(lul_device)
-	--LogHG("startup0: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
+	LogHG("starting with version: " .. version .. ' interval: ' .. interval .. ' device: ' .. lul_device )
 
 	xpcall(initHG, errorhandlerHG )
 
