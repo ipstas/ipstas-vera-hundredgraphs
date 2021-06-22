@@ -577,7 +577,7 @@ var HundredGraphs = (function (api) {
 			document.getElementById("stateDevs").innerHTML = "Devices are saved";
 			document.getElementById("saveDevs").style.color = stateHG;
 			document.getElementById("saveDevs").value = "OK";
-			console.log('{HundredGraphs packDeviceData} onFailure deviceDataHG saved:', true);		
+			console.log('{HundredGraphs packDeviceData} deviceDataHG saved:', true);		
 		}
 		function htmlFailure(){
 			stateHG = 'red'
@@ -587,6 +587,7 @@ var HundredGraphs = (function (api) {
 			document.getElementById("stateDevs").innerHTML = "Devices NOT saved";
 			document.getElementById("saveDevs").style.color = stateHG;
 			document.getElementById("saveDevs").value = "Try again";
+			console.log('{HundredGraphs packDeviceData} deviceDataHG saved:', false);		
 		}
 		function reiterate(){
 /* 				n++;
@@ -609,6 +610,8 @@ var HundredGraphs = (function (api) {
 			htmlSuccess();
 		}
 		function onFailure(){
+			let savedData = api.getDeviceState(device, SID_HG, "DeviceData");
+			console.log('{HundredGraphs packDeviceData} deviceDataHG saved:', savedData == deviceDataHG);
 			htmlFailure();
 /* 				let n = 0				
 			let savedData = api.getDeviceState(device, SID_HG, "DeviceData");

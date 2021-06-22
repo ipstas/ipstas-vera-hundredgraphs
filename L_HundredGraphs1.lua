@@ -69,18 +69,18 @@ local g_deviceData = {}
 local dataTextExt = 'empty'
 
 local function cDiff( dev1, dev2, svc, var )
-  -- LogHG(" getting calculate: " .. dev1 .. dev2 .. svc .. var)
+  -- LogHG("getting calculate: " .. dev1 .. dev2 .. svc .. var)
     local data1 = luup.variable_get( svc, var, dev1 )
     local data2 = luup.variable_get( svc, var, dev2 )
   local endData = tonumber( data1 ) - tonumber( data2 )
-  -- LogHG(" calculate cDiff: " .. dev1 .. dev2 .. endData)  
+  -- LogHG("calculate cDiff: " .. dev1 .. dev2 .. endData)  
     return endData
 end
 
 local function calcTime( dev, svc, var )
     local data = luup.variable_get( svc, var, dev )
   local endData = data * 86400
-  LogHG(" calculate calcTime: " .. dev .. endData)  
+  LogHG("calculate calcTime: " .. dev .. endData)  
     return endData
 end
 
@@ -167,7 +167,7 @@ end
 
 -- not used anymore
 local function TableInsert(item)
-  LogHG( " Inserting item data: " .. item )
+  LogHG("Inserting item data: " .. item )
 end
 -- not used anymore
 local function dumpTable(t)
@@ -209,7 +209,7 @@ function PackDeviceDataHG()
     item = item ..",enabled=".. (v.enabled and "checked" or "false")
     deviceData = deviceData .. item .. '; '
   end
-  LogHG( " New device data: " .. deviceData )
+  LogHG("New device data: " .. deviceData )
   if (deviceData == '') then return deviceData end
   luup.variable_set( SID.HG, "DeviceData", deviceData, pdev )
   return deviceData
@@ -224,7 +224,7 @@ local function sendRequestOld(data)
   
   local parameters = "&debug=" .. tostring(remotedebug) .. "&version=" .. tostring(version) .. "&node=" .. tostring(NODE_ID) .. "&json=" .. data
   local url = BASE_URL .. parameters
-  if (DEBUG == 1) then LogHG(" sending data: " .. parameters) end
+  if (DEBUG == 1) then LogHG("sending data: " .. parameters) end
   local res, code, response_headers, status = https.request{
     url = url,
     protocol = "tlsv1_2",
@@ -237,7 +237,7 @@ end
 
 
 function initHG()
-  LogHG( " Init started " .. enabled .. ' ' .. version .. ' ' .. devEnabled .. ' ' .. interval .. ' ' .. DEBUG .. ' ' )
+  LogHG("Init started " .. enabled .. ' ' .. version .. ' ' .. devEnabled .. ' ' .. interval .. ' ' .. DEBUG .. ' ' )
   luup.variable_set(SID.HG, "version", version, pdev)
   enabled = luup.variable_get( SID.HG, "Enabled", pdev ) or 0
   devEnabled = luup.variable_get( SID.HG, "Dev", pdev ) or 0  
@@ -269,7 +269,7 @@ function initHG()
     realTime = tonumber(realTime)
   end
   luup.variable_set('urn:micasaverde-com:serviceId:HaDevice1', "CommFailure", 0, pdev)
-  LogHG( " Init done en:" .. enabled .. ' dev:' .. devEnabled .. ' interval:' .. interval .. ' DEBUG:' .. DEBUG .. ' ' )
+  LogHG("Init done en:" .. enabled .. ' dev:' .. devEnabled .. ' interval:' .. interval .. ' DEBUG:' .. DEBUG .. ' ' )
 end
 
 function UpdateStartHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)  
@@ -293,16 +293,16 @@ function UpdateStartVersionHG(lul_device, lul_service, lul_variable, lul_value_o
 end
 function UpdateAPIHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
   API_KEY = luup.variable_get(SID.HG, "API", pdev) or 'empty'
-  LogHG( " Watched API_KEY: " .. API_KEY )
+  LogHG("Watched API_KEY: " .. API_KEY )
 end
 function UpdateIntervalHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
   interval = tonumber(lul_value_new) or 3600
   if (interval < 60) then
     interval = 65
-    LogHG( " Setting Interval (wrong): " .. interval)
+    LogHG("Setting Interval (wrong): " .. interval)
     luup.variable_set(SID.HG, "Interval", interval, pdev)
   else
-    LogHG( " Setting Interval (right): " .. interval)
+    LogHG("Setting Interval (right): " .. interval)
   end  
   LogHG( ' Watched Interval: ' .. interval)
   luup.reload()
@@ -312,37 +312,37 @@ function UpdateVariablesHG(lul_device, lul_service, lul_variable, lul_value_old,
   -- local deviceData = luup.variable_get(SID.HG, "DeviceData", pdev) or ''
   -- if deviceData == '' then return end
   -- VARIABLES = splitTable(deviceData)
-  LogHG( " Updated devices: " .. lul_device .. ' var: ' .. lul_variable .. '\n')
-  luup.call_delay(luup.reload(), 60)
+  LogHG("Updated devices: " .. lul_device .. ' var: ' .. lul_variable .. '\n')
+  luup.call_delay(luup.reload(), 80)
   
   --luup.call_action("urn:micasaverde-com:serviceId:HomeAutomationGateway1", "Reload", {}, 0)
   -- GetWatchDevices(VARIABLES)
-  -- LogHG( " Updated VARIABLES2: " .. dumpTable(VARIABLES2))
+  -- LogHG("Updated VARIABLES2: " .. dumpTable(VARIABLES2))
 end
 function UpdateNodeIdHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
   NODE_ID = luup.variable_get(SID.HG, "DeviceNode", pdev) or '1'
-  LogHG( " Watched NODE_ID: " .. NODE_ID )
+  LogHG("Watched NODE_ID: " .. NODE_ID )
 end
 function UpdateRealHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
   realTime = tonumber(lul_value_new) or 0
-  LogHG( " Watched realTime change: " .. realTime)
-  --LogHG( " Watched realTime change: " .. lul_device .. ' ' .. lul_service .. ' ' .. lul_variable .. ' ' .. lul_value_new )
+  LogHG("Watched realTime change: " .. realTime)
+  --LogHG("Watched realTime change: " .. lul_device .. ' ' .. lul_service .. ' ' .. lul_variable .. ' ' .. lul_value_new )
 end
 function UpdateDebugHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
   DEBUG = tonumber(lul_value_new) or 0
-  LogHG( " Watched DEBUG change: " .. DEBUG)
-  --LogHG( " Watched DEBUG change: " .. lul_device .. ' ' .. lul_service .. ' ' .. lul_variable .. ' ' .. lul_value_new )
+  LogHG("Watched DEBUG change: " .. DEBUG)
+  --LogHG("Watched DEBUG change: " .. lul_device .. ' ' .. lul_service .. ' ' .. lul_variable .. ' ' .. lul_value_new )
 end
 
 local function splitTable(str)
 	local tbl = {}
 	local pat = '([^;]+)'
 	--LogHG('----')
-	--LogHG(" Start Splitting: " .. str)
+	--LogHG("Start Splitting: " .. str)
 	for line in str.gmatch(str, pat) do
 		local item = {}
 		line = string.gsub(line, ';', '')
-		--LogHG(" Splitting line: " .. line)
+		--LogHG("Splitting line: " .. line)
 		pat = '([^,]+)'
 		for ins in line.gmatch(line, pat) do
 			ins = string.gsub(ins, ',', '')
@@ -357,7 +357,7 @@ local function splitTable(str)
 		end
 		table.insert(tbl, item)
 	end
-	--LogHG(" End Splitting: " .. dumpTable(tbl))
+	--LogHG("End Splitting: " .. dumpTable(tbl))
 	--LogHG('----')
 	return tbl  
  end
@@ -369,12 +369,12 @@ local function GetWatchDevices(VARIABLES)
   for i, v in ipairs(VARIABLES) do
     if (v.enabled == 'checked' and v.burst == 'checked') then              
       luup.variable_watch("watchDevicesHG", v.serviceId, v.serviceVar, tonumber(v.deviceId))
-      LogHG(" Watching device added: " .. v.deviceId .. ' ' .. v.serviceVar .. ' ' .. v.key)
+      LogHG("Watching device added: " .. v.deviceId .. ' ' .. v.serviceVar .. ' ' .. v.key)
       count = count + 1
     end
   end
 
-  LogHG(" Watching devices: " .. count)
+  LogHG("Watching devices: " .. count)
   return count
 end
 function watchDevicesHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
@@ -398,7 +398,7 @@ function watchDevicesHG(lul_device, lul_service, lul_variable, lul_value_old, lu
 		itemsSecondaryHG[itemKey] = value
 		return 
 	end
-	-- LogHG( " Watched devices found: " .. id .. '/' .. var .. ' val:' .. old .. '/' .. val )
+	-- LogHG("Watched devices found: " .. id .. '/' .. var .. ' val:' .. old .. '/' .. val )
 	--luup.log(tostring(lul_value_old))
 	--luup.log(tostring(lul_value_new))
 
@@ -408,7 +408,7 @@ function watchDevicesHG(lul_device, lul_service, lul_variable, lul_value_old, lu
 		itemsExtendedHG[#itemsExtendedHG + 1] = itemExtended
 	end
 	
-	LogHG( "Watched collected:" .. (#itemsExtendedHG or 0) .. ' real?:' .. rt .. ' id:' .. id .. '/' .. var .. ' val:' .. old .. '/' .. val .. '\n')
+	LogHG("Watched collected:" .. (#itemsExtendedHG or 0) .. ' real?:' .. realTime .. ' id:' .. id .. '/' .. var .. ' val:' .. old .. '/' .. val .. '\n')
 	
 	if realTime == 1 then  
 		SendDataHG('realTime')
@@ -468,7 +468,7 @@ local function GetNewEvents(lastnewHG, current)
  
   --AddPairHG(current, TOTAL, 'Watts', total,  'Total' )
   if (DEBUG == 1) then LogHG("GetNewEvents collected vars: " .. #itemsExtendedHG .. '/' .. count) end
-  -- if (DEBUG) then LogHG(" collected Ext vars: " .. #itemsExtendedHG .. ' table: ' .. json.encode(itemsExtended)) end
+  -- if (DEBUG) then LogHG("collected Ext vars: " .. #itemsExtendedHG .. ' table: ' .. json.encode(itemsExtended)) end
   return count
 end
 local function GetCurrentEvents(lastfull, current)
@@ -687,10 +687,10 @@ local function sendRequestHook(sender, current, lastnewHG, lastfull, payload, in
 			interval = tonumber(json.encode(rTable['interval'])) or interval
 			LogHG('ServerResponse new interval: ' .. interval)
 		end
-		if rTable['rt'] then
-			local rt = tonumber(json.encode(rTable['rt'])) or 0
-			luup.variable_set(SID.HG, "realTime", rt, pdev)
-			LogHG('ServerResponse new real time: ' .. rt)
+		if rTable['realTime'] then
+			local realTime = tonumber(json.encode(rTable['realTime'])) or 0
+			luup.variable_set(SID.HG, "realTime", realTime, pdev)
+			LogHG('ServerResponse new real time: ' .. realTime)
 		end	
 	else 
 		LogHG('ServerResponse decode ERR: ' .. decodeOK .. ', body: ' .. table.concat(body))
@@ -712,7 +712,7 @@ end
 
 function SendDataHG(reason, current, lastnewHG, lastfull, interval)
 
-	LogHG(" SendDataHG. Start sending data " .. reason .. ' between dates ' .. lastnewHG .. ' ' .. current )
+	LogHG("SendDataHG. Start sending data " .. reason .. ' between dates ' .. lastnewHG .. ' ' .. current )
 	local showcode = ''
 	local code = 0
 	local rtOff = false
@@ -928,14 +928,14 @@ _G.errorhandlerHG = errorhandlerHG
 function startup(lul_device)
 	lul_device = lul_device
 	pdev = tonumber(lul_device)
-	--LogHG(" startup0: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
+	--LogHG("startup0: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
 
-	xpcall(initHG(), errorhandlerHG )
+	xpcall(initHG, errorhandlerHG )
 
-	--LogHG(" startup: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
+	--LogHG("startup: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
 	local deviceData = luup.variable_get( SID.HG, "DeviceData", pdev )
 	deviceData = deviceData or '{}'
-	LogHG(" Started with deviceData: " .. deviceData)
+	LogHG("Started with deviceData: " .. deviceData)
 	if (deviceData == '{}' or deviceData == '') then
 		VARIABLES = {}
 		--luup.variable_set(SID.HG, "Interval", 3600, pdev)		
@@ -944,20 +944,20 @@ function startup(lul_device)
 		-- VARIABLES = splitTable(deviceData)
 		-- local textVar = table.concat(VARIABLES) or '{}'
 		-- if (status) then
-			-- LogHG(" Started with success VARIABLES: " .. textVar)
+			-- LogHG("Started with success VARIABLES: " .. textVar)
 		-- else
-			-- LogHG(" Started with failed VARIABLES: " .. textVar)
+			-- LogHG("Started with failed VARIABLES: " .. textVar)
 		-- end	
 	end
 
-	--LogHG(" startup2: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
+	--LogHG("startup2: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
 
 	enabled = luup.variable_get( SID.HG, "Enabled", pdev ) or 0
 	enabled = tonumber(enabled)
 	devEnabled = luup.variable_get( SID.HG, "Dev", pdev ) or 0
 	devEnabled = tonumber(enabled)
 
-	--LogHG(" startup3: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
+	--LogHG("startup3: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
 
 	NODE_ID = luup.variable_get( SID.HG, "DeviceNode", pdev ) or '1'
 	API_KEY = luup.variable_get( SID.HG, "API", pdev )
@@ -982,14 +982,14 @@ function startup(lul_device)
 	if (VARIABLES) then
 		xpcall(function() GetWatchDevices(VARIABLES) end, errorhandlerHG )
 	end
-	LogHG(" Started with version " .. version)
+	LogHG("Started with version " .. version)
 	
-	xpcall(HGTimer(), errorhandlerHG )
+	xpcall(HGTimer, errorhandlerHG )
 	
 	return true
 end
 
-LogHG(" *********************************************** ")
+LogHG("*********************************************** ")
 
 
 -- startup()
