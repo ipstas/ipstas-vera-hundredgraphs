@@ -1,5 +1,5 @@
 var versionHG = '...';
-var stateHG = '';
+
 
 var HundredGraphs = (function (api) {
     let myModule = {};   
@@ -92,6 +92,7 @@ var HundredGraphs = (function (api) {
 
 
     let hg_deviceData = [];
+    let deviceDataHG = [];
     let hg_sids = [];
     let hg_node = 1;  
     let enabled = 0;
@@ -99,6 +100,7 @@ var HundredGraphs = (function (api) {
     let lastRun = 'no response yet';
     let devEnabled =  0;
 	let DEBUG = 0;
+	let stateHG = '';
 	let html = '';
 	//console.log('HG start:', device, SID_HG, enabled, devEnabled, versionHG);
 
@@ -135,17 +137,19 @@ var HundredGraphs = (function (api) {
 			function onSuccess(caller){
 				console.log('[setAPI] success', API, api.getDeviceState(device, SID_HG, "API"));
 				stateHG = 'green'
-				document.getElementById("setAPI").style.backgroundColor = stateHG;
+				document.getElementById("setAPI").style.background = stateHG;
+				document.getElementById("state").style.background = stateHG;
 				document.getElementById("state").style.display = 'block';
-				document.getElementById("state").style.color = 'stateHG';
+				//document.getElementById("state").style.color = 'stateHG';
 				document.getElementById("state").innerHTML = "set OK";
 			}
 			function onFailure(caller){
 				console.warn('[setAPI] failed', API, api.getDeviceState(device, SID_HG, "API"));	
 				stateHG = 'red'
-				document.getElementById("setAPI").style.backgroundColor = stateHG;		
-				document.getElementById("state").style.display = 'block';
-				document.getElementById("state").style.color = 'stateHG';		
+				document.getElementById("setAPI").style.background = stateHG;		
+				document.getElementById("state").style.background = stateHG;
+				document.getElementById("state").style.display = 'block';			
+				//document.getElementById("state").style.color = 'stateHG';		
 				document.getElementById("state").innerHTML = "set Failed";
 			}
 			API = document.getElementById("setAPI").value;
@@ -190,7 +194,7 @@ var HundredGraphs = (function (api) {
 		serverResponse = JSON.stringify(serverResponse, undefined, 2);
 
 		console.log('HG about device:', device, SID_HG, API, 'enabled:', enabled, 'devenabled:', devEnabled, 'version:', versionHG);
-		html = '<p id="state" style="display:none;">' + stateHG + '</p>';
+		html = '<p id="state" style="display:none; padding:10px">' + stateHG + '</p>';
 			
 		html += '<p>Read the full docs at <a href="https://www.hundredgraphs.com/apidocs" target=_blank>HundredGraphs API</a></p>';
 		html += '<p><ul>';
@@ -283,15 +287,15 @@ var HundredGraphs = (function (api) {
             if (hg_sids && hg_sids.length)
                 return hg_sids;
             // if no hg_sids yet check SID_ALL var
-            var deviceData = api.getDeviceState(device, SID_HG, "SidData");
+            var deviceDataHG = api.getDeviceState(device, SID_HG, "SidData");
             // if no saved var yet use default SID_ALL
-            if (!deviceData || deviceData == '') 
+            if (!deviceDataHG || deviceDataHG == '') 
                 return hg_sids = JSON.parse(JSON.stringify(SID_ALL));
             // use saved SID_ALL
-            deviceData = deviceData.split(';');
+            deviceDataHG = deviceDataHG.split(';');
             //var s = [];
-            //console.log('HundredGraphs running readCustom. deviceData:', deviceData);
-            for (let d of deviceData) {
+            //console.log('HundredGraphs running readCustom. deviceDataHG:', deviceDataHG);
+            for (let d of deviceDataHG) {
                 // Get the intervals.
                 var item = {};
                 //console.log('HG1: ', d);       
@@ -336,7 +340,7 @@ var HundredGraphs = (function (api) {
 		html += '<div class="favorites_device_busy_device_overlay"><div class="round_loading deviceCpanelBusySpinner"></div></div>';
 		api.setCpanelContent(html);
 		function onSuccess(){
-            //console.log('{HundredGraphs packSID_ALL} deviceData reset: ', true);
+            //console.log('{HundredGraphs packSID_ALL} deviceDataHG reset: ', true);
             customDevices();		
             return true;
 		}
@@ -344,21 +348,21 @@ var HundredGraphs = (function (api) {
     }
     function packSID_ALL(){
         console.log('{HundredGraphs packSID_ALL} SID_ALL: ', SID_ALL);
-        var deviceData = '';
+        var deviceDataHG = '';
 		var html = '';
 		html += '<div class="favorites_device_busy_device_overlay"><div class="round_loading deviceCpanelBusySpinner"></div></div>';
 		api.setCpanelContent(html);
         for (let item of hg_sids){
             //console.log('{HundredGraphs packSID_ALL} item: ', item);
-            deviceData = deviceData + 'type=' + item.type + ',serviceVar=' + item.serviceVar + ',serviceId=' + item.serviceId + ';';
+            deviceDataHG = deviceDataHG + 'type=' + item.type + ',serviceVar=' + item.serviceVar + ',serviceId=' + item.serviceId + ';';
         }
-        //console.log('{HundredGraphs packSID_ALL} deviceData: ', deviceData);
+        //console.log('{HundredGraphs packSID_ALL} deviceDataHG: ', deviceDataHG);
 		function onSuccess(){
-            //console.log('{HundredGraphs packSID_ALL} deviceData saved: ', true);
+            //console.log('{HundredGraphs packSID_ALL} deviceDataHG saved: ', true);
             customDevices();
             return true;
 		}
-        api.setDeviceStatePersistent(device, SID_HG, "SidData", deviceData, {onSuccess: onSuccess});			
+        api.setDeviceStatePersistent(device, SID_HG, "SidData", deviceDataHG, {onSuccess: onSuccess});			
     }
     function addSID(){        
         let item = {};    
@@ -467,10 +471,10 @@ var HundredGraphs = (function (api) {
         //getListDevices();
     }
     function getListDevices(){
-        var deviceData = api.getUserData().devices;
+        var deviceDataHG = api.getUserData().devices;
         var devsids = readCustom();
         try{
-            for (let item of deviceData){
+            for (let item of deviceDataHG){
                 if (item.id){
                     for (let checkIt of devsids){
                         for (let attr of item.states) {
@@ -510,30 +514,30 @@ var HundredGraphs = (function (api) {
 			html += '</p>';
 			api.setCpanelContent(html);
 			getListDevices
-			console.log('HundredGraphs populated hg_deviceData:', hg_deviceData.length, 'of', deviceData.length);
+			console.log('HundredGraphs populated hg_deviceData:', hg_deviceData.length, 'of', deviceDataHG.length);
         }catch(e){
             console.error('HundredGraphs getListDevices err:', e);
         }
-        //console.log('HundredGraphs found PM devices:', hg_deviceData.length, 'of', deviceData.length);
+        //console.log('HundredGraphs found PM devices:', hg_deviceData.length, 'of', deviceDataHG.length);
     }
     function unpackDeviceData(device) {
         hg_node = api.getDeviceState(device, SID_HG, "DeviceNode") || 1;
-        var deviceData;
+        var deviceDataHG;
         try {
             console.log('HundredGraphs running unpackDeviceData for:', device, 'initial:', hg_deviceData);
             hg_deviceData = [];
 
-            deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
-            if (!deviceData || deviceData === undefined || deviceData === "") {
-                return console.log('HundredGraphs empty variable for:', device, 'DeviceData:', deviceData, 'dev2:', api.getDeviceState(device, SID_HG, "DeviceData"));
+            deviceDataHG = api.getDeviceState(device, SID_HG, "DeviceData");
+            if (!deviceDataHG || deviceDataHG === undefined || deviceDataHG === "") {
+                return console.log('HundredGraphs empty variable for:', device, 'DeviceData:', deviceDataHG, 'dev2:', api.getDeviceState(device, SID_HG, "DeviceData"));
             }                    
-            deviceData = deviceData.split(';');
-            //console.log('HundredGraphs running unpackDeviceData. deviceData:', deviceData);
-            for (var i = 0; i < deviceData.length; i++) {
+            deviceDataHG = deviceDataHG.split(';');
+            //console.log('HundredGraphs running unpackDeviceData. deviceDataHG:', deviceDataHG);
+            for (var i = 0; i < deviceDataHG.length; i++) {
                 // Get the intervals.
                 var item = {};
-                var attr = deviceData[i].toString();
-                attr = deviceData[i].split(',');
+                var attr = deviceDataHG[i].toString();
+                attr = deviceDataHG[i].split(',');
                 for (var j = 0; j < attr.length; j++) {
                     var key, val;                
                     key = attr[j].split('=')[0];
@@ -559,7 +563,7 @@ var HundredGraphs = (function (api) {
 			//hg_deviceData.sort((a, b) => a.type.localeCompare(b.type) || a.key.localeCompare(b.key) );
             console.log('[HundredGraphs] unpackDeviceData hg_deviceData: ', hg_deviceData);
         } catch(e){
-            console.error('HundredGraphs err:', e, 'deviceData:', deviceData, 'hg_deviceData:', hg_deviceData);
+            console.error('HundredGraphs err:', e, 'deviceDataHG:', deviceDataHG, 'hg_deviceData:', hg_deviceData);
             Utils.logError('Error in HG.unpackDeviceData(): ' + e);
         }
     }
@@ -573,7 +577,7 @@ var HundredGraphs = (function (api) {
 			document.getElementById("stateDevs").innerHTML = "Devices are saved";
 			document.getElementById("saveDevs").style.color = stateHG;
 			document.getElementById("saveDevs").value = "OK";
-			console.log('{HundredGraphs packDeviceData} onFailure deviceData saved:', true);		
+			console.log('{HundredGraphs packDeviceData} onFailure deviceDataHG saved:', true);		
 		}
 		function htmlFailure(){
 			stateHG = 'red'
@@ -588,7 +592,7 @@ var HundredGraphs = (function (api) {
 /* 				n++;
 			let savedData = api.getDeviceState(device, SID_HG, "DeviceData"));
 			console.log('[saving data'
-			if (savedData == deviceData) {
+			if (savedData == deviceDataHG) {
 				htmlSuccess()
 			} else if (n > 100) {
 				htmlFailure()
@@ -596,7 +600,7 @@ var HundredGraphs = (function (api) {
 		}
 		function stopIt(intervalId){
 /* 				clearInterval(intervalId);
-			if (savedData == deviceData) 
+			if (savedData == deviceDataHG) 
 				htmlSuccess()
 			else 
 				htmlFailure()		 */			
@@ -608,7 +612,7 @@ var HundredGraphs = (function (api) {
 			htmlFailure();
 /* 				let n = 0				
 			let savedData = api.getDeviceState(device, SID_HG, "DeviceData");
-			if (savedData == deviceData)
+			if (savedData == deviceDataHG)
 				return; 
 			var intervalId = setInterval(reiterate(), 5000);
 			setTimeout(stopIt(intervalId), 60000);		 */			
@@ -618,18 +622,18 @@ var HundredGraphs = (function (api) {
 			document.getElementById("spinner").style.display = 'block';
 			hg_node = document.getElementById("deviceNode").value;
 			api.setDeviceStatePersistent(device, SID_HG, "DeviceNode", hg_node);      
-			let deviceData;
+			let deviceDataHG;
 			for (let item of hg_deviceData){
 				//console.log('{HundredGraphs packDeviceData} item: ', item);
 				item.enabled = item.enabled || false;
 				item.burst = item.burst || false;
 				if (item?.deviceId)
-					deviceData = deviceData + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ',burst=' + item.burst + ';\n';
-					//deviceData = deviceData + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ',burst=' + item.burst + ';\n';
+					deviceDataHG = deviceDataHG + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ',burst=' + item.burst + ';\n';
+					//deviceDataHG = deviceDataHG + 'type=' + item.type + ',deviceId=' + item.deviceId + ',key=' + item.key + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ',burst=' + item.burst + ';\n';
 			}
 			console.log('{HundredGraphs packDeviceData} hg_deviceData: ', hg_deviceData.length);
 			document.getElementById("stateDevs").innerHTML = "Saving devices";
-			api.setDeviceStatePersistent(device, SID_HG, "DeviceData", deviceData, {onSuccess: onSuccess, onFailure: onFailure});			
+			api.setDeviceStatePersistent(device, SID_HG, "DeviceData", deviceDataHG, {onSuccess: onSuccess, onFailure: onFailure});			
 			return true;
 		}catch(err){
 			console.warn('{HundredGraphs packDeviceData} err:', err);
@@ -673,9 +677,9 @@ var HundredGraphs = (function (api) {
 
             if (hg_deviceData.length > 0) {
 				
-				var deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
-				if (!deviceData || deviceData == ""){			
-					//console.warn('HundredGraphs deviceData:', deviceData);
+				deviceDataHG = api.getDeviceState(device, SID_HG, "DeviceData");
+				if (!deviceDataHG || deviceDataHG == ""){			
+					//console.warn('HundredGraphs deviceDataHG:', deviceDataHG);
 					html += '<p id="status_data" style="width:90%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:red">Devices are not saved</p>';	
 				}
                 // Area to display statuses and error messages.
@@ -717,17 +721,17 @@ var HundredGraphs = (function (api) {
 				html += '<input type="button" id="saveDevs" class="btn btn-success" value="Save" onClick="HundredGraphs.packDeviceData()"/>&nbsp';
                 html += '<input type="button" class="btn btn-danger" value="Reset" onClick="HundredGraphs.resetDevices()" />';
                 html += '</p>';  
-				if (!deviceData || deviceData == ""){			
+				if (!deviceDataHG || deviceDataHG == ""){			
 					html += '<p id="status_data" style="width:90%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:red">Devices are not saved</p>';	
-					console.log('HG deviceData:', deviceData);
+					console.log('HG deviceDataHG:', deviceDataHG);
 				}
             } else {
-                var deviceData = api.getDeviceState(device, SID_HG, "DeviceData");
+                var deviceDataHG = api.getDeviceState(device, SID_HG, "DeviceData");
                 //getListDevices();
-                deviceData = deviceData || 'empty';
-                //console.log('HG3: ', device, 'hcg:', hg_deviceData, 'luldata:', deviceData );
+                deviceDataHG = deviceDataHG || 'empty';
+                //console.log('HG3: ', device, 'hcg:', hg_deviceData, 'luldata:', deviceDataHG );
                 html += '<p style="margin-left:10px; margin-top:10px">No saved devices for logger id #' + device + '</p>';
-                html += '<p style="margin-left:10px; margin-top:10px">DeviceData: ' + hg_deviceData.length + ' ' + deviceData + '</p>'; 
+                html += '<p style="margin-left:10px; margin-top:10px">DeviceData: ' + hg_deviceData.length + ' ' + deviceDataHG + '</p>'; 
                 html += '<p>';
                 html += '<input type="button" class="btn btn-info" value="Get Devices" onClick="HundredGraphs.getListDevices()" style="margin-left:60%" />';
                 html += '</p>';                   
