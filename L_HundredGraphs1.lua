@@ -464,6 +464,10 @@ local function GetDeviceDetails()
 		['longitude'] = luup.longitude or 0,
 		['latitude'] = luup.latitude or 0,
 		['city'] = luup.city or 'nowhere',		
+		['timezone'] = luup.timezone or 0,		
+		['sunset'] = luup.sunset or 0,		
+		['sunrise'] = luup.sunrise or 0,		
+		--	['units'] = luup.timezone or 0,		
 	}
 	LogHG("GetDeviceDetails geoData: " .. table.concat(geoData)) 
 

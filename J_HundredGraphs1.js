@@ -90,9 +90,6 @@ var HundredGraphs = (function (api) {
         },
     ];
 	
-
-
-
     let deviceDataHG = [];
     let sidsHG = [];
 	//window.deviceDataHG = deviceDataHG;
@@ -108,6 +105,10 @@ var HundredGraphs = (function (api) {
 	let html = '';
 	//console.log('HG start:', device, SID_HG, enabled, devEnabled, versionHG);
 
+	let weatherSettings = api.getUserData()?.weatherSettings;
+	if (weatherSettings?.tempFormat != api.getDeviceState(device, SID_HG, "tempFormat"))
+		api.api.setDeviceStatePersistent(device, SID_HG , 'tempFormat', tempFormat);
+	
 	let comVars =  api.getDeviceState(device, SID_HG, "ComVars") || ['KWH', 'Watts', 'LoadLevelStatus', 'Status', 'Tripped', 'CurrentTemperature', 'CurrentLevel', 'ModeState', 'FanStatus', 'BatteryLevel', 'uptimeTotal', 'memoryFree', 'cpuLoad1'];
 	let sids = api.getDeviceState(device, SID_HG, "SIDs");
 	sidsHG = JSON.parse(sids) || [];
