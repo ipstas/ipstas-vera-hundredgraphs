@@ -269,6 +269,17 @@
 	},
 	{
 		"Label": {
+			"lang_tag": "hg_all",
+			"text": "serviceIDs"
+		},
+		"Position": 1,
+		"TopNavigationTab": 1,
+		"TabType": "javascript",
+		"ScriptName": "J_HundredGraphs1.js",
+		"Function": "HundredGraphs.selectServiceID"
+	},
+	{
+		"Label": {
 			"lang_tag": "hg_devices",
 			"text": "Devices"
 		},
@@ -277,17 +288,6 @@
 		"TabType": "javascript",
 		"ScriptName": "J_HundredGraphs1.js",
 		"Function": "HundredGraphs.showDevices"
-	},
-	{
-		"Label": {
-			"lang_tag": "hg_custom",
-			"text": "Custom Vars"
-		},
-		"Position": 1,
-		"TopNavigationTab": 1,
-		"TabType": "javascript",
-		"ScriptName": "J_HundredGraphs1.js",
-		"Function": "HundredGraphs.customDevices"
 	},
 	{
 		"Label": {
@@ -322,20 +322,10 @@
 	},
 	{
 		"Label": {
-			"lang_tag": "ui7_notifications",
-			"text": "Notifications"
-		},
-		"Position": 5,
-		"TabType": "javascript",
-		"ScriptName": "shared.js",
-		"Function": "device_notifications"
-	},
-	{
-		"Label": {
 			"lang_tag": "ui7_device_scenes",
 			"text": "Scenes"
 		},
-		"Position": 6,
+		"Position": 5,
 		"TabType": "javascript",
 		"ScriptName": "shared.js",
 		"Function": "device_scenes"

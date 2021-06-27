@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '3.8'
+local version = '3.9'
 
 local ltn12 = require("ltn12")
 local library  = require "L_HundredGraphsLibrary"
@@ -66,6 +66,9 @@ itemsExtendedOldHG = {} -- contains items: { time, deviceId, value }
 itemsSecondaryHG = {} -- contains items: { time, deviceId, value }
 itemsSecondaryOldHG = {} -- contains items: { time, deviceId, value }
 local g_deviceData = {}
+local modelData = {}
+local sidData = {}
+local geoData = {}
 local dataTextExt = 'empty'
 
 local function cDiff( dev1, dev2, svc, var )
@@ -89,6 +92,7 @@ end
 -- For function based logging, use: key, calculate, serviceVar
 -- if you want power to be counted for Total use countTotal=true
 local VARIABLES = {}
+
 local VARIABLES2 = {
   { key="House", deviceId = 301, serviceId='urn:micasaverde-com:serviceId:EnergyMetering1', serviceVar="Watts", countTotal=false }, -- Send device energy
   { key="HouseA", deviceId = 303, serviceId='urn:micasaverde-com:serviceId:EnergyMetering1', serviceVar="Watts", countTotal=false },
@@ -147,6 +151,11 @@ local BASE_URL = ""
 
 function errorhandlerHG( err )
    luup.log( "[HundredGraphs Logger] ERROR: " .. err )
+   luup.device_message(pdev, -2, 'uploading', 1, 'HGTimer');
+   luup.device_message(pdev, -2, 'failed', 0, 'HundredGraphs err');
+   luup.device_message(pdev, 2, 'failed', 0, 'HundredGraphs err')
+   luup.variable_set( SID.HG, "ERR", err, pdev )
+   luup.variable_set( SID.HG, "lastRun", err, pdev )
 end	
 function logcallHG(text)
 	--luup.log('[HundredGraphs Logger] xpcall start')
@@ -338,21 +347,27 @@ local function splitTable(str)
 	local tbl = {}
 	local pat = '([^;]+)'
 	--LogHG('----')
+	str = str:gsub('\n','');
 	--LogHG("Start Splitting: " .. str)
 	for line in str.gmatch(str, pat) do
 		local item = {}
-		line = string.gsub(line, ';', '')
-		--LogHG("Splitting line: " .. line)
+		--LogHG("Splitting line: " .. (line or 'empty'))	
+		line = line:gsub('\n','');
+		line = string.gsub(line, ';', '')		
+		line = line:gsub('\n','');
 		pat = '([^,]+)'
 		for ins in line.gmatch(line, pat) do
+			LogHG(' Splitting ins: ' .. (ins or 'empty'))
 			ins = string.gsub(ins, ',', '')
-			local res = {}
+			--local res = {}
 			for key, value in string.gmatch(ins, "([^&=]+)=([^&=]+)") do
 				key = string.gsub(key, ' ', '')
-				--Log ('key: ' .. key .. ' value: ' .. value)
+				if value == nil then
+					LogHG('EMPTY!!! Splitting keys: ' .. key .. '/' .. (value or 'empty'))
+				end
 				item[key]=value
 			end
-			--LogHG(' Solitting ins: ' .. ins)
+			
 			--table.insert(item, res)
 		end
 		table.insert(tbl, item)
@@ -378,6 +393,7 @@ local function GetWatchDevices(VARIABLES)
   return count
 end
 function watchDevicesHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
+	local sender = 'new'
 	local realTime = luup.variable_get( SID.HG, "realTime", pdev ) or 0
 	realTime = tonumber(realTime) or 0
 	local status = -1
@@ -403,7 +419,6 @@ function watchDevicesHG(lul_device, lul_service, lul_variable, lul_value_old, lu
 	--luup.log(tostring(lul_value_new))
 
 	if (id ~= 0) then
-		--status, err, ret = xpcall( AddPairHG(1000*current, id, var, val), errorhandlerHG )	
 		itemExtended = {['time'] = 1000*current, ['id'] = id, ['type'] = var, ['value'] = val}
 		itemsExtendedHG[#itemsExtendedHG + 1] = itemExtended
 	end
@@ -418,108 +433,197 @@ function watchDevicesHG(lul_device, lul_service, lul_variable, lul_value_old, lu
   
 end
 
-local function GetNewEvents(lastnewHG, current)
-  count = 0
-  local total = 0
-  
-  --local current = os.time()
-  
-  for i, v in ipairs(VARIABLES) do
-    if (v.enabled == 'checked') then
-      local val = 0      
-      local lastSeen = 0
-      local comm = 0
-	  local item = {}
-      v.deviceId = tonumber(v.deviceId)        
+-- collect devices model data
+local function GetDeviceDetails()
+	local count = 0
+	modelData = {}
+	sidData = luup.variable_get( SID.HG, "SidData", pdev ) or ''
+	status, sidData = xpcall(function() return splitTable(sidData) end, errorhandlerHG )
+	
+	-- local geo = {}
+	-- geo[0] = 'longitude'
+	-- geo[1] = longitude or 0
+	-- geoData[0] = geo
+	-- geo[0] = 'latitude'
+	-- geo[1] = latitude or 0
+	-- geoData[1] = geo
+	-- geo[0] = 'city'
+	-- geo[1] = city or 'nowhere'
+	-- geoData[2] = geo
+	
+	for i, v in ipairs(VARIABLES) do
+		if v.enabled == 'checked' and modelData[id] == nil then
+			local val = 0
+			local key = v.key
+			local comm = 0     
+			local device_type, manufacturer, model, roomNum, roomName, time_created
 
-      --val = luup.variable_get(v.serviceId, v.serviceVar, v.deviceId) or 0
-      comm = luup.variable_get('urn:micasaverde-com:serviceId:HaDevice1', 'CommFailure', v.deviceId) or 0
-      comm = tonumber(comm)
-      if (comm ~= 0) then
-        val = 'offline'
-        lastSeen = luup.variable_get('urn:micasaverde-com:serviceId:HaDevice1', 'CommFailureTime', v.deviceId) or current     
-        LogHG('HG GetNewEvents:' .. count .. ' device: ' .. v.deviceId .. ' lastSeen:' .. lastSeen .. ' offline: ' .. comm)      
-      else
-        val = luup.variable_get(v.serviceId, v.serviceVar, v.deviceId) or 0
-        if (v.serviceId == "urn:micasaverde-com:serviceId:HaDevice1") then  
-          lastSeen = luup.variable_get(v.serviceId, 'BatteryDate', v.deviceId) or current    
-        elseif (v.serviceId == 'urn:micasaverde-com:serviceId:EnergyMetering1') then
-          lastSeen = luup.variable_get(v.serviceId, 'KWHReading', v.deviceId) or current
-        elseif (v.serviceId == 'urn:micasaverde-com:serviceId:SecuritySensor1' and tonumber(val) == 1) then
-          lastSeen = luup.variable_get(v.serviceId, 'LastTrip', v.deviceId) or current
-        elseif (v.serviceId == 'urn:micasaverde-com:serviceId:SecuritySensor1' and tonumber(val) == 0) then
-          --lastSeen = luup.variable_get(v.serviceId, 'LastWakeup', v.deviceId) or current
-          lastSeen = current
-        else
-          lastSeen = current
-        end
-      end
-      lastSeen = tonumber(lastSeen)
-      
-      --LogHG("GetNewEvents collected var0: " .. count .. ' lastSeen ' .. lastSeen .. ' dev: ' .. v.deviceId .. '/' .. v.serviceVar .. ' val: ' .. val)
-      
-      if (lastSeen > lastnewHG) then		
-		AddPairHG(1000*lastSeen, v.deviceId, v.serviceVar, val, v.key )
-		count = count + 1
-      end
-      
-    end
-  end
- 
-  --AddPairHG(current, TOTAL, 'Watts', total,  'Total' )
-  if (DEBUG == 1) then LogHG("GetNewEvents collected vars: " .. #itemsExtendedHG .. '/' .. count) end
-  -- if (DEBUG) then LogHG("collected Ext vars: " .. #itemsExtendedHG .. ' table: ' .. json.encode(itemsExtended)) end
-  return count
+			local id = tonumber(v.deviceId)        
+			comm = luup.variable_get('urn:micasaverde-com:serviceId:HaDevice1', 'CommFailure', id) or 0
+			comm = tonumber(comm) or 0
+
+			if (comm == 0) then
+				key =  luup.attr_get ('name', id) or v.key or v.deviceId
+				device_type =  luup.attr_get('device_type', id) or 'empty'
+				--LogHG("GetDeviceDetails adding device:" .. id .. '/device_type:' .. device_type) 
+				manufacturer =  luup.attr_get('manufacturer', id) or 'empty'
+				--LogHG("GetDeviceDetails adding device:" .. id .. '/manufacturer:' .. manufacturer) 
+				model =  luup.attr_get('model', id) or 'empty'
+				--LogHG("GetDeviceDetails adding device:" .. id .. '/model:' .. model) 
+				roomNum = luup.attr_get('room', id) or 0
+				roomNum = tonumber(roomNum) or 0
+				--LogHG("GetDeviceDetails adding device:" .. id .. '/roomNum:' .. roomNum) 
+				roomName =  luup.rooms[roomNum] or 'House'
+				--LogHG("GetDeviceDetails adding device:" .. id .. '/roomName:' .. roomName) 
+				time_created =  luup.attr_get('time_created', id) or 'empty'
+				--LogHG("GetDeviceDetails adding device:" .. id .. '/time_created:' .. time_created) 
+				--LogHG("GetDeviceDetails adding device:" .. id .. '/key:' .. key .. '/manuf:' .. manufacturer .. '/model:' .. model .. '/roomName:' .. roomName .. '/time_created:' .. time_created ) 
+				xpcall(function() AddPairDevicesHG(id, key, device_type, manufacturer, model, roomNum, roomName, time_created) end, errorhandlerHG)
+			end
+
+			count = count + 1
+		end
+	end
+
+	LogHG("GetDeviceDetails collected devices: " .. count) 
+
+	return count
+end
+function AddPairDevicesHG(id, key, device_type, manufacturer, model, roomNum, roomName, time_created)
+	local itemExtended = {}
+	id = tostring(id)
+	
+	for i, v in pairs(modelData) do
+		if v.id == id then
+			if (DEBUG == 1) then LogHG(' AddPairDevices exists1: ' .. i .. '/' .. v.id) end
+			return
+		end
+	end
+	
+	if modelData[id] ~= nil then
+		if (DEBUG == 1) then LogHG(' AddPairDevices doesnt exists2: ' .. id) end
+	end
+
+	itemExtended = {['id'] = id, ['key'] = key, ['device_type'] = device_type, ['manufacturer'] = manufacturer, ['model'] = model, ['roomNum'] = roomNum, ['roomName'] = roomName, ['createdAt'] = time_created } 
+	
+	modelData[id] = itemExtended
+	--modelData[id] = itemExtended
+	--if (DEBUG == 1) then
+	--LogHG(' AddPairDevices itemsExtendedHG1: ' .. id .. '/' .. (table.concat(modelData[id]) or 'empty')	)
+		--LogHG(' AddPairDevices itemsExtendedHG1: ' .. id .. '/' .. (table.concat(modelData[#modelData]) or 'empty')	)
+	--end
+
+	return true
+end
+
+-- collect events
+local function GetNewEvents(lastnewHG, current)
+	count = 0
+	local total = 0
+	local sender = 'new'
+	--local current = os.time()
+  
+	for i, v in ipairs(VARIABLES) do
+		if (v.enabled == 'checked') then
+			v.deviceId = tonumber(v.deviceId)
+			local val = 0      
+			local key = v.key
+			local lastSeen = 0
+			local comm = 0
+			local item = {}
+			        		
+			if v.deviceId == nil then
+				LogHG('HG GetNewEvents VARS: ' .. (v.deviceId or 'empty') .. ' v.serviceId ' .. v.serviceId)
+			end
+			
+			comm = luup.variable_get('urn:micasaverde-com:serviceId:HaDevice1', 'CommFailure', v.deviceId) or 0
+			comm = tonumber(comm)
+			if (comm ~= 0) then
+				val = 'offline'
+				lastSeen = luup.variable_get('urn:micasaverde-com:serviceId:HaDevice1', 'CommFailureTime', v.deviceId) or current     
+				--LogHG('HG GetNewEvents:' .. count .. ' device: ' .. v.deviceId .. ' lastSeen:' .. lastSeen .. ' offline: ' .. comm)      
+			else
+				val = luup.variable_get(v.serviceId, v.serviceVar, v.deviceId) or 0
+				if (v.serviceId == "urn:micasaverde-com:serviceId:HaDevice1") then  
+					lastSeen = luup.variable_get(v.serviceId, 'BatteryDate', v.deviceId) or current    
+				elseif (v.serviceId == 'urn:micasaverde-com:serviceId:EnergyMetering1') then
+					lastSeen = luup.variable_get(v.serviceId, 'KWHReading', v.deviceId) or current
+				elseif (v.serviceId == 'urn:micasaverde-com:serviceId:SecuritySensor1' and tonumber(val) == 1) then
+					lastSeen = luup.variable_get(v.serviceId, 'LastTrip', v.deviceId) or current
+				elseif (v.serviceId == 'urn:micasaverde-com:serviceId:SecuritySensor1' and tonumber(val) == 0) then
+					--lastSeen = luup.variable_get(v.serviceId, 'LastWakeup', v.deviceId) or current
+					lastSeen = current
+				else
+					lastSeen = current
+				end
+			end
+			lastSeen = tonumber(lastSeen)
+
+			--LogHG("GetNewEvents collected var0: " .. count .. ' lastSeen ' .. lastSeen .. ' dev: ' .. v.deviceId .. '/' .. v.serviceVar .. ' val: ' .. val)
+
+			if (lastSeen > lastnewHG) then		
+				AddPairHG(1000*lastSeen, v.deviceId, v.serviceId, v.serviceVar, val, v.key, sender )
+				count = count + 1
+			end
+
+		end
+	end
+
+	if (DEBUG == 1) then LogHG("GetNewEvents collected vars: " .. #itemsExtendedHG .. '/' .. count) end
+	-- if (DEBUG) then LogHG("collected Ext vars: " .. #itemsExtendedHG .. ' table: ' .. json.encode(itemsExtended)) end
+	return count
 end
 local function GetCurrentEvents(lastfull, current)
-  local count = 0
-  local total = 0
-  -- we will collect everything
-  itemsSecondaryHG = {}
-  
-  for i, v in ipairs(VARIABLES) do
-    if (v.enabled == 'checked') then
-		local val = 0
-		local key = v.key
-		local comm = 0     
-		local roomNam, roomName
+	local count = 0
+	local total = 0
+	local sender = 'current'
+	-- we will collect everything
+	itemsSecondaryHG = {}
 
-      v.deviceId = tonumber(v.deviceId)        
-      comm = luup.variable_get('urn:micasaverde-com:serviceId:HaDevice1', 'CommFailure', v.deviceId) or 0
-      comm = tonumber(comm) or 0
-      
-      if (comm == 0) then
-        val = luup.variable_get(v.serviceId, v.serviceVar, v.deviceId) or 0
-        val = tostring(val)
-		--key = luup.variable_get('urn:micasaverde-com:serviceId:ZWaveDevice1', 'ConfiguredName', v.deviceId) or v.key
-		key =  luup.attr_get ('name', tonumber(v.deviceId)) or v.key or v.deviceId
-		roomNum =  luup.attr_get ('room', tonumber(v.deviceId)) or 0
-		roomNum = tonumber(roomNum)
-		roomName =  luup.rooms[roomNum] or 'House'
-        --status = xpcall( AddPairHG(current, v.deviceId, v.serviceVar, val, v.key), myerrorhandler )
-        --LogHG('GetCurrentEvents: ' .. status)
-        
-		--xpcall( AddPairHG(1000*current, v.deviceId, v.serviceVar, val, v.key ), errorhandlerHG )
-		xpcall(function() AddPairHG(1000*current, v.deviceId, v.serviceVar, val, key, roomNum, roomName ) end, errorhandlerHG)
-      else      
-		--xpcall( AddPairHG(1000*current, v.deviceId, 'activity', 'offline', v.key ), errorhandlerHG )
-		xpcall(function() AddPairHG(1000*current, v.deviceId, 'activity', 'offline', v.key ) end, errorhandlerHG)
-        LogHG('HG log offline: ' .. v.deviceId .. ' offline ' .. comm)
-      end
+	for i, v in ipairs(VARIABLES) do
+		if (v.enabled == 'checked') then
+			v.deviceId = tonumber(v.deviceId)       
+			local val = 0
+			local key = v.key
+			local comm = 0     
+			local roomNam, roomName
+			
+			--LogHG('HG GetCurrentEvents VARS: ' .. (v.deviceId or 'empty') .. ' v.serviceId ' .. v.serviceId)
 
-      count = count + 1
-    end
-  end
-  --AddPairHG(1000*current, TOTAL, 'Watts', total,  'Total' )
-  --if (DEBUG == 1) then 
-  LogHG("GetCurrentEvents collected vars: " .. count) 
-  --end
+			 
+			comm = luup.variable_get('urn:micasaverde-com:serviceId:HaDevice1', 'CommFailure', v.deviceId) or 0
+			comm = tonumber(comm) or 0
 
-  return count
+			if (comm == 0) then
+				val = luup.variable_get(v.serviceId, v.serviceVar, v.deviceId) or 0
+				val = tostring(val)
+				--key = luup.variable_get('urn:micasaverde-com:serviceId:ZWaveDevice1', 'ConfiguredName', v.deviceId) or v.key
+				key =  luup.attr_get ('name', tonumber(v.deviceId)) or v.key or v.deviceId
+				--roomNum =  luup.attr_get ('room', tonumber(v.deviceId)) or 0
+				--roomNum = tonumber(roomNum)
+				--roomName =  luup.rooms[roomNum] or 'House'
+				--LogHG('GetCurrentEvents: ' .. status)
+				xpcall(function() AddPairHG(1000*current, v.deviceId, v.serviceId, v.serviceVar, val, key, sender) end, errorhandlerHG)
+			else      
+				xpcall(function() AddPairHG(1000*current, v.deviceId, v.serviceId, 'activity', 'offline', v.key, sender ) end, errorhandlerHG)
+			LogHG('HG log offline: ' .. v.deviceId .. ' offline ' .. comm)
+			end
+
+			count = count + 1
+		end
+	end
+
+	LogHG("GetCurrentEvents collected vars: " .. count) 
+
+	return count
 end
 
-function AddPairHG(last, id, var, value, key, roomNum, roomName)
-	--LogHG(' AddPair started key: ' .. (key or "empty") .. ' value: ' .. (value or "empty"))
+function AddPairHG(last, id, service, var, value, key, sender, roomNum, roomName)
+	
+	if var == nil or id == nil then
+		LogHG('ERRRRRRR AddPair started id: ' .. (id or "empty") .. ' var: ' .. (var or "empty"))
+	end	
+	
 	local s
 	local itemExtended = {}
 	local itemSec = {}
@@ -532,15 +636,18 @@ function AddPairHG(last, id, var, value, key, roomNum, roomName)
 			LogHG('AddPair SAME, key: ' .. id .. '/' .. var .. '/' .. (key or "watched") .. ' value: ' .. (value or "empty") .. '\n\n')
 		end
 		itemsSecondaryHG[itemKey] = value
-		return 
+		-- for current events we send everything
+		if sender == 'new' then
+			return
+		end
 	end
 	
 	if key == nil then
-		itemExtended = {['time'] = last, ['id'] = id, ['type'] = var, ['value'] = value}
+		itemExtended = {['time'] = last, ['id'] = id, ['service'] = service, ['type'] = var, ['value'] = value}
 		itemSec = {['id'] = id, ['type'] = var, ['value'] = value}	
 		itemsSecondaryHG[itemKey] = value
 	else
-		itemExtended = {['time'] = last, ['id'] = id, ['type'] = var, ['value'] = value, ['key'] = key, ['roomNum'] = roomNum, ['roomName'] = roomName } 
+		itemExtended = {['time'] = last, ['id'] = id, ['service'] = service, ['type'] = var, ['value'] = value, ['key'] = key, ['roomNum'] = roomNum, ['roomName'] = roomName } 
 		itemSec = {['id'] = id, ['type'] = var, ['value'] = value}	
 		itemsSecondaryHG[itemKey] = value
 	end
@@ -735,7 +842,9 @@ function SendDataHG(reason, current, lastnewHG, lastfull, interval)
 	payload["current"] = current
 	payload["lastnew"] = lastnewHG
 	payload["lastfull"] = lastfull
-	
+	payload["sid"] = sidData 	
+	payload["geo"] = geoData 	
+	payload["devices"] = modelData 	
 	payload["events"] = itemsExtendedHG 	
 	local jsonGo = json.encode(payload)
 	--if DEBUG == 1 then LogHG('SendDataHG start payload: ' .. jsonGo) end  
@@ -802,6 +911,8 @@ function ResetDataHG()
   itemsExtendedHG = {}
   itemsSecondaryOldHG = itemsSecondaryHG
   itemsSecondaryHG = {}
+  modelData = {}
+  sidData = {}
   
   count = 0
   LogHG('ResetDataHG done')
@@ -825,6 +936,9 @@ function HGTimer()
 	local showcode = 'Running'
 
 	LogHG('HG HGTimer start: ' .. interval)
+	luup.device_message(pdev, -2, 'initializing', 1, 'startup');
+	luup.device_message(pdev, -2, 'success', 1, 'HGTimer');
+	luup.device_message(pdev, 1, 'uploading', 0, 'HGTimer');
 
 	API_KEY = luup.variable_get( SID.HG, "API", pdev ) or 'empty'
 	enabled = luup.variable_get(SID.HG, "Enabled", pdev) or 0
@@ -863,7 +977,19 @@ function HGTimer()
 
 	-- get current if 3 hrs passed, otherwise get new since lastcheck
 	--if (VARIABLES == {})
-	if (current - lastfull >= 60*60*2) then  
+	--if ((lastfull ~=0 or DEBUG == 1) and current - lastfull >= 60*60*24*1) then  
+	if (current - lastfull >= 60*60*24*1) then  
+		sender = 'GetDeviceDetails'
+		status, count = xpcall(function() return GetDeviceDetails() end, errorhandlerHG )
+		if (status) then
+			status = 'success'
+		else
+			status = 'failed'
+		end
+		LogHG('HGTimer getting GetDeviceDetails: ' .. status .. ' ' .. #modelData .. '/' .. (count or 0))
+	end
+	
+	if (current - lastfull >= 60*60*4) then  
 		sender = 'GetCurrentEvents'
 		status, count = xpcall(function() return GetCurrentEvents(lastfull, current) end, errorhandlerHG )
 		if (status) then
@@ -901,10 +1027,12 @@ function HGTimer()
 	--luup.variable_set( SID.HG, "running", 1, pdev )    
 	
 	-- call timer again
+	luup.device_message(pdev, -2, 'uploading', 1, 'HGTimer');
+	luup.device_message(pdev, 4, 'success', 45, 'HGTimer');
 	local res = luup.call_timer("HGTimer", 1, interval, "", interval)
 	local runtime = tonumber(os.time()) - current 
 
-	LogHG(' Uploaded ' .. #itemsExtendedHG .. '/' .. count .. ' events, in .. ' .. runtime .. ' next in ' .. interval .. ' sec, res ' .. res)
+	LogHG(sender .. ' Uploaded ' .. #itemsExtendedHG .. '/' .. count .. ' events, in .. ' .. runtime .. ' next in ' .. interval .. ' sec, res ' .. res)
 
 	return true
 end
@@ -929,7 +1057,8 @@ function startup(lul_device)
 	lul_device = lul_device
 	pdev = tonumber(lul_device)
 	LogHG("starting with version: " .. version .. ' interval: ' .. interval .. ' device: ' .. lul_device )
-
+	luup.device_message(pdev, 1, 'initializing', 60, 'startup');
+	
 	xpcall(initHG, errorhandlerHG )
 
 	--LogHG("startup: " .. version .. ' interval: ' .. interval .. ' lul_device ' .. lul_device )
@@ -989,7 +1118,7 @@ function startup(lul_device)
 	return true
 end
 
-LogHG("*********************************************** ")
+LogHG(version .. "*********************************************** ")
 
 
 -- startup()

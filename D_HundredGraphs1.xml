@@ -11,16 +11,13 @@
         <friendlyName>HundredGraphs</friendlyName>
         <manufacturer>HundredGraphs</manufacturer>
         <manufacturerURL>https://www.hundredgraphs.com/</manufacturerURL>
+		<handleChildren>0</handleChildren>
+		<Category_Num>22</Category_Num>
         <serviceList>
             <service>
                 <serviceType>urn:hundredgraphs-com:service:HundredGraphs:1</serviceType>
                 <serviceId>urn:hundredgraphs-com:serviceId:HundredGraphs1</serviceId>
                 <SCPDURL>S_HundredGraphs1.xml</SCPDURL>
-            </service>
-            <service>
-                <serviceType>urn:schemas-micasaverde-com:service:SecuritySensor:1</serviceType>
-                <serviceId>urn:micasaverde-com:serviceId:SecuritySensor1</serviceId>
-                <SCPDURL>S_SecuritySensor1.xml</SCPDURL>
             </service>
             <service>
                 <serviceType>urn:schemas-micasaverde-com:service:HaDevice:1</serviceType>
