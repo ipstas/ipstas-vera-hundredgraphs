@@ -69,6 +69,7 @@ local g_deviceData = {}
 local modelData = {}
 local sidData = {}
 local geoData = {}
+local decodeOK
 local dataTextExt = 'empty'
 
 local function cDiff( dev1, dev2, svc, var )
@@ -138,6 +139,7 @@ local running = 0
 local iter = 0
 local count = 0
 local lastfull = 0
+local lastdetails = 0
 lastnewHG = 0
 
 local p = print
@@ -357,7 +359,7 @@ local function splitTable(str)
 		line = line:gsub('\n','');
 		pat = '([^,]+)'
 		for ins in line.gmatch(line, pat) do
-			LogHG(' Splitting ins: ' .. (ins or 'empty'))
+			--LogHG(' Splitting ins: ' .. (ins or 'empty'))
 			ins = string.gsub(ins, ',', '')
 			--local res = {}
 			for key, value in string.gmatch(ins, "([^&=]+)=([^&=]+)") do
@@ -437,19 +439,34 @@ end
 local function GetDeviceDetails()
 	local count = 0
 	modelData = {}
-	sidData = luup.variable_get( SID.HG, "SidData", pdev ) or ''
-	status, sidData = xpcall(function() return splitTable(sidData) end, errorhandlerHG )
+	local str = luup.variable_get( SID.HG, "SIDs", pdev ) or ''
+	sidData, decodeOK = json.decode(str)
+	decodeOK = decodeOK or 'OK'
+	if decodeOK ~= 'OK' then
+		LogHG('sidData json.decode1:' .. decodeOK)
+	end
+	--LogHG("GetDeviceDetails sidData1: " .. dumpTable(sidData)) 
+	--status, sidData = xpcall(function() return splitTable(sidData) end, errorhandlerHG )
+	LogHG("GetDeviceDetails sidData2: " .. dumpTable(sidData)) 
 	
 	-- local geo = {}
-	-- geo[0] = 'longitude'
-	-- geo[1] = longitude or 0
-	-- geoData[0] = geo
-	-- geo[0] = 'latitude'
-	-- geo[1] = latitude or 0
-	-- geoData[1] = geo
-	-- geo[0] = 'city'
-	-- geo[1] = city or 'nowhere'
-	-- geoData[2] = geo
+	-- geo = {['id'] = 'latitude', ['value'] = luup.longitude or 0} 
+	-- LogHG("GetDeviceDetails geoData1: " .. table.concat(geo)) 
+	-- table.insert(geoData, geo)
+	-- geo = {['id'] = 'latitude', ['value'] = luup.latitude or 0} 
+	-- LogHG("GetDeviceDetails geoData2: " .. table.concat(geo)) 
+	-- table.insert(geoData, geo)
+	-- geo = {['id'] = 'city', ['value'] = luup.city or 0} 
+	
+	-- table.insert(geoData, geo)
+	
+	geoData = {
+		['longitude'] = luup.longitude or 0,
+		['latitude'] = luup.latitude or 0,
+		['city'] = luup.city or 'nowhere',		
+	}
+	LogHG("GetDeviceDetails geoData: " .. table.concat(geoData)) 
+
 	
 	for i, v in ipairs(VARIABLES) do
 		if v.enabled == 'checked' and modelData[id] == nil then
@@ -689,7 +706,7 @@ local function sendRequestHook(sender, current, lastnewHG, lastfull, payload, in
 	showDev = tonumber(showDev)
 
 	if DEBUG == 1 then
-		LogHG('sendRequestHook start with payload: ' .. payload or 'empty')
+		LogHG('sendRequestHook start with payload: ' .. (payload or 'empty'))
 	end
   
 	if enabled == 1 then
@@ -831,6 +848,8 @@ function SendDataHG(reason, current, lastnewHG, lastfull, interval)
 	local hubId = luup.pk_accesspoint
 	local NODE_ID = luup.variable_get(SID.HG, "DeviceNode", pdev) or '1'
 
+	LogHG("SendDataHG. Start sending data sidDate" .. dumpTable(sidData) )
+	
 	payload['apiKey'] = API_KEY 
 	payload["node"] = NODE_ID 
 	payload['app'] = "Vera"
@@ -846,7 +865,13 @@ function SendDataHG(reason, current, lastnewHG, lastfull, interval)
 	payload["geo"] = geoData 	
 	payload["devices"] = modelData 	
 	payload["events"] = itemsExtendedHG 	
-	local jsonGo = json.encode(payload)
+	
+	local jsonGo, encodeOK = json.encode(payload)
+	encodeOK = encodeOK or 'OK'
+	if encodeOK ~= 'OK' then
+		LogHG('SendDataHG jsonGo encode:' .. encodeOK)
+	end	
+	
 	--if DEBUG == 1 then LogHG('SendDataHG start payload: ' .. jsonGo) end  
   
 	code, interval = sendRequestHook(reason, current, lastnewHG, lastfull, jsonGo, interval, DEBUG)  
@@ -905,18 +930,18 @@ function SendDataHG(reason, current, lastnewHG, lastfull, interval)
 	return showcode, lastnewHG, interval
 end
 function ResetDataHG()
-  items = {}
-  
-  itemsExtendedOldHG = itemsExtendedHG
-  itemsExtendedHG = {}
-  itemsSecondaryOldHG = itemsSecondaryHG
-  itemsSecondaryHG = {}
-  modelData = {}
-  sidData = {}
-  
-  count = 0
-  LogHG('ResetDataHG done')
-end
+	items = {}
+
+	itemsExtendedOldHG = itemsExtendedHG
+	itemsExtendedHG = {}
+	itemsSecondaryOldHG = itemsSecondaryHG
+	itemsSecondaryHG = {}
+	modelData = {}
+	sidData = {}
+
+	count = 0
+	LogHG('ResetDataHG done')
+	end
 
 function HGTimerOnce()
   count = 0
@@ -970,15 +995,8 @@ function HGTimer()
 		luup.variable_set( SID.HG, "lastRun", showcode, pdev )
 	end
     
-  -- BASE_URL = SRV_URL .. API_KEY
-  --if (iter == 6) then
-  
-  --lastfull = current
-
-	-- get current if 3 hrs passed, otherwise get new since lastcheck
-	--if (VARIABLES == {})
-	--if ((lastfull ~=0 or DEBUG == 1) and current - lastfull >= 60*60*24*1) then  
-	if (current - lastfull >= 60*60*24*1) then  
+	-- send device details once per day
+	if (current - lastdetails >= 60*60*24*1) then  
 		sender = 'GetDeviceDetails'
 		status, count = xpcall(function() return GetDeviceDetails() end, errorhandlerHG )
 		if (status) then
@@ -987,8 +1005,10 @@ function HGTimer()
 			status = 'failed'
 		end
 		LogHG('HGTimer getting GetDeviceDetails: ' .. status .. ' ' .. #modelData .. '/' .. (count or 0))
+		lastdetails = current
 	end
 	
+	-- send events
 	if (current - lastfull >= 60*60*4) then  
 		sender = 'GetCurrentEvents'
 		status, count = xpcall(function() return GetCurrentEvents(lastfull, current) end, errorhandlerHG )
