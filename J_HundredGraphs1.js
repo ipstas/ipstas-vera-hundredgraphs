@@ -104,10 +104,6 @@ var HundredGraphs = (function (api) {
 	let stateHG = '';
 	let html = '';
 	//console.log('HG start:', device, SID_HG, enabled, devEnabled, versionHG);
-
-	let weatherSettings = api.getUserData()?.weatherSettings;
-	if (weatherSettings?.tempFormat != api.getDeviceState(device, SID_HG, "tempFormat"))
-		api.api.setDeviceStatePersistent(device, SID_HG , 'tempFormat', tempFormat);
 	
 	let comVars =  api.getDeviceState(device, SID_HG, "ComVars") || ['KWH', 'Watts', 'LoadLevelStatus', 'Status', 'Tripped', 'CurrentTemperature', 'CurrentLevel', 'ModeState', 'FanStatus', 'BatteryLevel', 'uptimeTotal', 'memoryFree', 'cpuLoad1'];
 	let sids = api.getDeviceState(device, SID_HG, "SIDs");
@@ -134,8 +130,6 @@ var HundredGraphs = (function (api) {
 		}
 	}	
 	function getDevice(){
-		//if (device) return; 
-		//Utils.logError('Error in HG.unpackDeviceData() test: ' + 'test');
 		try{
 			device = device || api.getCpanelDeviceId();
 			versionHG = api.getDeviceState(device, SID_HG, "version");
@@ -145,7 +139,11 @@ var HundredGraphs = (function (api) {
 			DEBUG = api.getDeviceState(device, SID_HG, "DEBUG");
 			if ((!devEnabled || devEnabled == '') && device)
 				api.setDeviceStatePersistent(device, SID_HG, "Dev", 0, {dynamic: true});
-			//console.log('HG getDevice:', device, SID_HG, enabled, devEnabled, versionHG);
+			
+			let weatherSettings = api.getUserData()?.weatherSettings;
+			if (weatherSettings?.tempFormat != api.getDeviceState(device, SID_HG, "tempFormat"))
+				api.setDeviceStatePersistent(device, SID_HG , 'tempFormat', weatherSettings?.tempFormat);
+	
 			return device;
 		}catch(e){
 			Utils.logError('Error in MyPlugin.getDevice(): ' + e);

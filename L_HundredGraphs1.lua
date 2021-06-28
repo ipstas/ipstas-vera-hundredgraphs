@@ -320,15 +320,19 @@ function UpdateIntervalHG(lul_device, lul_service, lul_variable, lul_value_old, 
   return interval
 end
 function UpdateVariablesHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
-  -- local deviceData = luup.variable_get(SID.HG, "DeviceData", pdev) or ''
-  -- if deviceData == '' then return end
-  -- VARIABLES = splitTable(deviceData)
-  LogHG("Updated devices: " .. lul_device .. ' var: ' .. lul_variable .. '\n')
-  luup.call_delay(luup.reload(), 80)
-  
-  --luup.call_action("urn:micasaverde-com:serviceId:HomeAutomationGateway1", "Reload", {}, 0)
-  -- GetWatchDevices(VARIABLES)
-  -- LogHG("Updated VARIABLES2: " .. dumpTable(VARIABLES2))
+	-- local deviceData = luup.variable_get(SID.HG, "DeviceData", pdev) or ''
+	-- if deviceData == '' then return end
+	-- VARIABLES = splitTable(deviceData)
+	local function reloadEngine(lul_device, lul_variable)
+		LogHG("Reloading because of devices: " .. lul_device .. ' var: ' .. lul_variable .. '\n')
+		luup.reload()
+	end
+	LogHG("Updated devices: " .. lul_device .. ' var: ' .. lul_variable .. '\n')
+	luup.call_delay(reloadEngine(lul_device, lul_variable), 120)
+
+	--luup.call_action("urn:micasaverde-com:serviceId:HomeAutomationGateway1", "Reload", {}, 0)
+	-- GetWatchDevices(VARIABLES)
+	-- LogHG("Updated VARIABLES2: " .. dumpTable(VARIABLES2))
 end
 function UpdateNodeIdHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
   NODE_ID = luup.variable_get(SID.HG, "DeviceNode", pdev) or '1'
@@ -440,14 +444,15 @@ local function GetDeviceDetails()
 	local count = 0
 	modelData = {}
 	local str = luup.variable_get( SID.HG, "SIDs", pdev ) or ''
+	-- str = str:gsub('\n','')
+	-- sidData = dumpTable(str)
 	sidData, decodeOK = json.decode(str)
 	decodeOK = decodeOK or 'OK'
 	if decodeOK ~= 'OK' then
 		LogHG('sidData json.decode1:' .. decodeOK)
+		sidData = {}
 	end
-	--LogHG("GetDeviceDetails sidData1: " .. dumpTable(sidData)) 
-	--status, sidData = xpcall(function() return splitTable(sidData) end, errorhandlerHG )
-	LogHG("GetDeviceDetails sidData2: " .. dumpTable(sidData)) 
+	-- LogHG("GetDeviceDetails sidData2: " .. dumpTable(sidData)) 
 	
 	-- local geo = {}
 	-- geo = {['id'] = 'latitude', ['value'] = luup.longitude or 0} 
@@ -464,13 +469,12 @@ local function GetDeviceDetails()
 		['longitude'] = luup.longitude or 0,
 		['latitude'] = luup.latitude or 0,
 		['city'] = luup.city or 'nowhere',		
-		['timezone'] = luup.timezone or 0,		
-		['sunset'] = luup.sunset or 0,		
-		['sunrise'] = luup.sunrise or 0,		
-		--	['units'] = luup.timezone or 0,		
+		['timezone'] = luup.timezone or 0,				
+		['tempFormat'] = luup.variable_get( SID.HG, "tempFormat", pdev ) or ''
 	}
-	LogHG("GetDeviceDetails geoData: " .. table.concat(geoData)) 
-
+	--LogHG("GetDeviceDetails geoData1: " .. table.concat(geoData)) 
+	--LogHG("GetDeviceDetails geoData2: " .. dumpTable(geoData)) 
+	--geoData = {}
 	
 	for i, v in ipairs(VARIABLES) do
 		if v.enabled == 'checked' and modelData[id] == nil then
@@ -734,16 +738,16 @@ local function sendRequestHook(sender, current, lastnewHG, lastfull, payload, in
 		if code1 == 200 then
 			LogHG('Prod response code: ' .. code1.. ' status: ' .. status)
 		else
-			LogHG('Prod response code: '  .. code1 .. ' status: ' .. status .. ' payload: ' .. payload)
+			LogHG('Prod response code: ' .. code1.. ' status: ' .. status)
+			-- LogHG('Prod response code: '  .. code1 .. ' status: ' .. status .. ' payload: ' .. payload)
 			LogHG('Prod Response body: ' .. table.concat(response_body1) .. '\n')	
 		end
 
 		res1 = response_body2[0] or response_body2[1]
 
-		if DEBUG == 1 then
-			LogHG('Response Prod1:' .. table.concat(response_body1) .. '\n\n\n')
-			--LogHG('Response Prod2:' .. (res2 or 'empty res') .. '\n\n\n')
-		end
+		-- if DEBUG == 1 then
+			-- LogHG('Response Prod1:' .. table.concat(response_body1) .. '\n\n\n')
+		-- end
 	end
   
 	if devEnabled == 1 then
@@ -767,16 +771,16 @@ local function sendRequestHook(sender, current, lastnewHG, lastfull, payload, in
 		if code2 == 200 then
 			LogHG('Dev response code: ' .. code2 .. ' status: ' .. status)
 		else
-			LogHG('Dev response code: '  .. code2 .. ' status: ' .. status .. ' payload: ' .. payload)
-			LogHG('Dev Response body: ' .. table.concat(response_body2) .. '\n')		
+			LogHG('Dev response code: ' .. code2 .. ' status: ' .. status)
+			--LogHG('Dev response code: '  .. code2 .. ' status: ' .. status .. ' payload: ' .. payload)
+			LogHG('Dev Response body: ' .. (dumpTable(response_body2)):gsub('\n','') .. '\n')		
 		end
 
 		res2 = response_body2[0] or response_body2[1]
 
-		if DEBUG == 1 then
-			LogHG('Response dev1:' .. table.concat(response_body2) .. '\n\n\n')
-			--LogHG('Response dev2:' .. (res2 or 'empty res') .. '\n\n\n')	  
-		end
+		-- if DEBUG == 1 then
+			-- LogHG('Response dev1:' .. (dumpTable(response_body2)):gsub('\n','') .. '\n\n\n')
+		-- end
 	end
   
 	if (showDev == 1) then	
@@ -852,7 +856,7 @@ function SendDataHG(reason, current, lastnewHG, lastfull, interval)
 	local hubId = luup.pk_accesspoint
 	local NODE_ID = luup.variable_get(SID.HG, "DeviceNode", pdev) or '1'
 
-	LogHG("SendDataHG. Start sending data sidDate" .. dumpTable(sidData) )
+	LogHG("SendDataHG. Start sending data sidData" .. dumpTable(sidData) )
 	
 	payload['apiKey'] = API_KEY 
 	payload["node"] = NODE_ID 
