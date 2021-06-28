@@ -250,6 +250,8 @@ var HundredGraphs = (function (api) {
 		}	
 		
 		html += '<p>Server Response: ' + lastRun + '</p>';
+		html += '<p>Total: we summarize all Energy (Watts) reporting devices unless they were specifically excluded in your <a href="https://hundredgraphs.com/Feeds" target=_blank">Feeds</a> tab</p>';
+		html += '<p>Unaccounted: if you have Whole House meter (like Aeotec and set it in your HundredGrahs, here would be the difference between Whole House data and Total data</p>';
 		html += '<p>Details: <pre><code>' + serverResponse + '</code></pre></p>';
 		
 		html += '<p>You usually dont need these</p>';

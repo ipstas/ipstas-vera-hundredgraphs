@@ -1004,7 +1004,7 @@ function HGTimer()
 	end
     
 	-- send device details once per day
-	if (current - lastdetails >= 60*60*24*1) then  
+	if (current - lastdetails >= 60*60*24*2) then  
 		sender = 'GetDeviceDetails'
 		status, count = xpcall(function() return GetDeviceDetails() end, errorhandlerHG )
 		if (status) then
