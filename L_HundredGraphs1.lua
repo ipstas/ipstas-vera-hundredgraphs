@@ -470,7 +470,7 @@ local function GetDeviceDetails()
 		['latitude'] = luup.latitude or 0,
 		['city'] = luup.city or 'nowhere',		
 		['timezone'] = luup.timezone or 0,				
-		['tempFormat'] = luup.variable_get( SID.HG, "tempFormat", pdev ) or ''
+		['tempFormat'] = luup.variable_get( SID.HG, "tempFormat", pdev) or '',
 	}
 	--LogHG("GetDeviceDetails geoData1: " .. table.concat(geoData)) 
 	--LogHG("GetDeviceDetails geoData2: " .. dumpTable(geoData)) 
