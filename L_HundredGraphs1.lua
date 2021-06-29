@@ -484,28 +484,24 @@ local function GetDeviceDetails()
 			local device_type, manufacturer, model, roomNum, roomName, time_created
 
 			local id = tonumber(v.deviceId)        
-			comm = luup.variable_get('urn:micasaverde-com:serviceId:HaDevice1', 'CommFailure', id) or 0
-			comm = tonumber(comm) or 0
 
-			if (comm == 0) then
-				key =  luup.attr_get ('name', id) or v.key or v.deviceId
-				device_type =  luup.attr_get('device_type', id) or 'empty'
-				--LogHG("GetDeviceDetails adding device:" .. id .. '/device_type:' .. device_type) 
-				manufacturer =  luup.attr_get('manufacturer', id) or 'empty'
-				--LogHG("GetDeviceDetails adding device:" .. id .. '/manufacturer:' .. manufacturer) 
-				model =  luup.attr_get('model', id) or 'empty'
-				--LogHG("GetDeviceDetails adding device:" .. id .. '/model:' .. model) 
-				roomNum = luup.attr_get('room', id) or 0
-				roomNum = tonumber(roomNum) or 0
-				--LogHG("GetDeviceDetails adding device:" .. id .. '/roomNum:' .. roomNum) 
-				roomName =  luup.rooms[roomNum] or 'House'
-				--LogHG("GetDeviceDetails adding device:" .. id .. '/roomName:' .. roomName) 
-				time_created =  luup.attr_get('time_created', id) or 'empty'
-				--LogHG("GetDeviceDetails adding device:" .. id .. '/time_created:' .. time_created) 
-				--LogHG("GetDeviceDetails adding device:" .. id .. '/key:' .. key .. '/manuf:' .. manufacturer .. '/model:' .. model .. '/roomName:' .. roomName .. '/time_created:' .. time_created ) 
-				xpcall(function() AddPairDevicesHG(id, key, device_type, manufacturer, model, roomNum, roomName, time_created) end, errorhandlerHG)
-			end
-
+			key =  luup.attr_get ('name', id) or v.key or v.deviceId
+			device_type =  luup.attr_get('device_type', id) or 'empty'
+			--LogHG("GetDeviceDetails adding device:" .. id .. '/device_type:' .. device_type) 
+			manufacturer =  luup.attr_get('manufacturer', id) or 'empty'
+			--LogHG("GetDeviceDetails adding device:" .. id .. '/manufacturer:' .. manufacturer) 
+			model =  luup.attr_get('model', id) or 'empty'
+			--LogHG("GetDeviceDetails adding device:" .. id .. '/model:' .. model) 
+			roomNum = luup.attr_get('room', id) or 0
+			roomNum = tonumber(roomNum) or 0
+			--LogHG("GetDeviceDetails adding device:" .. id .. '/roomNum:' .. roomNum) 
+			roomName =  luup.rooms[roomNum] or 'House'
+			--LogHG("GetDeviceDetails adding device:" .. id .. '/roomName:' .. roomName) 
+			time_created =  luup.attr_get('time_created', id) or 'empty'
+			--LogHG("GetDeviceDetails adding device:" .. id .. '/time_created:' .. time_created) 
+			--LogHG("GetDeviceDetails adding device:" .. id .. '/key:' .. key .. '/manuf:' .. manufacturer .. '/model:' .. model .. '/roomName:' .. roomName .. '/time_created:' .. time_created ) 
+			xpcall(function() AddPairDevicesHG(id, key, device_type, manufacturer, model, roomNum, roomName, time_created) end, errorhandlerHG)
+			
 			count = count + 1
 		end
 	end
