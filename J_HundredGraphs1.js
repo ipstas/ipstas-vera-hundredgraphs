@@ -859,7 +859,7 @@ var HundredGraphs = (function (api) {
 			document.getElementById("spinner").style.display = 'none';
 			document.getElementById("stateDevs").style.display = 'block';
 			document.getElementById("stateDevs").style.color = stateHG;
-			document.getElementById("stateDevs").innerHTML = "Devices are saved";
+			document.getElementById("stateDevs").innerHTML = "Devices are saved. If you have changed burst devices you need to make plugin to reread changes. To do so you simply can change reporting interval by 1 second and it would force it";
 			document.getElementById("saveDevs").style.color = stateHG;
 			document.getElementById("saveDevs").value = "OK";
 			console.log('{HundredGraphs packDeviceData} deviceData saved:', true);		

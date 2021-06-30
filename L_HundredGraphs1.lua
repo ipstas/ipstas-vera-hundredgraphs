@@ -391,7 +391,8 @@ local function GetWatchDevices(VARIABLES)
   for i, v in ipairs(VARIABLES) do
     if (v.enabled == 'checked' and v.burst == 'checked') then              
       luup.variable_watch("watchDevicesHG", v.serviceId, v.serviceVar, tonumber(v.deviceId))
-      LogHG("Watching device added: " .. v.deviceId .. ' ' .. v.serviceVar .. ' ' .. v.key)
+	  local key = v.key or luup.attr_get ('name', id) or v.deviceId
+      LogHG("Watching device added: " .. v.deviceId .. ' ' .. v.serviceVar .. ' ' .. key)
       count = count + 1
     end
   end
@@ -1081,6 +1082,8 @@ _G.errorhandlerHG = errorhandlerHG
 function startup(lul_device)
 	lul_device = lul_device
 	pdev = tonumber(lul_device)
+	luup.variable_set( SID.HG, "ERR", err, pdev )
+	
 	LogHG("starting with version: " .. version .. ' interval: ' .. interval .. ' device: ' .. lul_device )
 	luup.device_message(pdev, 1, 'initializing', 60, 'startup');
 	
