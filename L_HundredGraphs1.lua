@@ -384,21 +384,22 @@ local function splitTable(str)
 	return tbl  
  end
 local function GetWatchDevices(VARIABLES)
-  count = 0
-  local total = 0
-  local current = os.time()
-  
-  for i, v in ipairs(VARIABLES) do
-    if (v.enabled == 'checked' and v.burst == 'checked') then              
-      luup.variable_watch("watchDevicesHG", v.serviceId, v.serviceVar, tonumber(v.deviceId))
-	  local key = v.key or luup.attr_get ('name', id) or v.deviceId
-      LogHG("Watching device added: " .. v.deviceId .. ' ' .. v.serviceVar .. ' ' .. key)
-      count = count + 1
-    end
-  end
+	count = 0
+	local total = 0
+	local current = os.time()
 
-  LogHG("Watching devices: " .. count)
-  return count
+	for i, v in ipairs(VARIABLES) do
+		if (v.enabled == 'checked' and v.burst == 'checked') then       
+			local id = tonumber(v.deviceId)        
+			luup.variable_watch("watchDevicesHG", v.serviceId, v.serviceVar, id)
+			local key = v.key or luup.attr_get('name', id) or id
+			LogHG("Watching device added: " .. id .. ' ' .. v.serviceVar .. ' ' .. key)
+			count = count + 1
+		end
+	end
+
+	LogHG("Watching devices: " .. count)
+	return count
 end
 function watchDevicesHG(lul_device, lul_service, lul_variable, lul_value_old, lul_value_new)
 	local sender = 'new'
@@ -487,7 +488,7 @@ local function GetDeviceDetails()
 
 			local id = tonumber(v.deviceId)        
 
-			key =  luup.attr_get ('name', id) or v.key or v.deviceId
+			key =  luup.attr_get('name', id) or v.key or v.deviceId
 			device_type =  luup.attr_get('device_type', id) or 'empty'
 			--LogHG("GetDeviceDetails adding device:" .. id .. '/device_type:' .. device_type) 
 			manufacturer =  luup.attr_get('manufacturer', id) or 'empty'

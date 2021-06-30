@@ -983,7 +983,7 @@ var HundredGraphs = (function (api) {
 				
 				// Display the button
 				html += '<p>'; 
-				html += '<div id="stateDevs" style="padding: 10px; background: lightgray;">If you have a lot of devices sometimes they are not saved on 1st run</div>';
+				html += '<div id="stateDevs" style="padding: 10px; background: lightgray;"></div>';
 				html += '</p>'; 
 				html += '<p>'; 
 				html += '<input type="button" id="saveDevs" class="btn btn-success" value="Save" onClick="HundredGraphs.packDeviceData()"/>&nbsp';
