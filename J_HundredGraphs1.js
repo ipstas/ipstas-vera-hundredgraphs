@@ -1,5 +1,5 @@
-var versionHG = '...';
-
+let versionHG = '...';
+let deviceDataHG = [];
 
 var HundredGraphs = (function (api) {
     let myModule = {};   
@@ -90,7 +90,7 @@ var HundredGraphs = (function (api) {
         },
     ];
 	
-    let deviceDataHG = [];
+    
     let sidsHG = [];
 	//window.deviceDataHG = deviceDataHG;
     //let deviceData = [];
@@ -378,7 +378,7 @@ var HundredGraphs = (function (api) {
     }
     function updateEnabled(idx, object) {
         deviceDataHG[idx].enabled = (object.checked === true) ? "checked" : "";
-        //console.log('HG enabled sw: ', deviceDataHG[idx]);
+        console.log('HG enabled sw: ', idx, object.checked, object, deviceDataHG[idx]);
     }
     function burstEnabled(idx, object) {
         deviceDataHG[idx].burst = (object.checked === true) ? "checked" : "";
@@ -669,7 +669,7 @@ var HundredGraphs = (function (api) {
     }
     function getListDevices(){
 		console.log('HundredGraphs getListDevices:', deviceDataHG?.length);
-		if (!deviceDataHG?.length && device)
+		if (!deviceDataHG?.length && device) 
 			unpackDeviceData(device);
         let allData = api.getUserData().devices;
 		let deviceData = deviceDataHG;
@@ -893,7 +893,7 @@ var HundredGraphs = (function (api) {
 		} */
 		function onSuccess(){
 			savedData = api.getDeviceState(device, SID_HG, "DeviceData");
-			console.log('{HundredGraphs packDeviceData} deviceData onSuccess saved:', savedData == deviceData);
+			//console.log('{HundredGraphs packDeviceData} deviceData onSuccess saved:', savedData == deviceData);
 			deviceDataHG = deviceDataHG.map(o=>{
 				o.n = false;
 				return o;
@@ -902,7 +902,7 @@ var HundredGraphs = (function (api) {
 		}
 		function onFailure(){
 			savedData = api.getDeviceState(device, SID_HG, "DeviceData");
-			console.log('{HundredGraphs packDeviceData} deviceData onFailure saved:', savedData == deviceData);
+			//console.log('{HundredGraphs packDeviceData} deviceData onFailure saved:', savedData == deviceData);
 			if (savedData != deviceData) {
 /* 				let n = 0				
 				var intervalId = setInterval(reiterate(deviceData, n), 5000);
@@ -922,15 +922,17 @@ var HundredGraphs = (function (api) {
 			let out = '';
 			for (let item of deviceData){
 				//console.log('{HundredGraphs packDeviceData} item: ', item);
-				item.enabled = item.enabled || false;
-				item.burst = item.burst || false;
+				item.enabled = item.enabled || '';
+				item.burst = item.burst || '';
 				if (item?.deviceId)
 					out = out + 'deviceId=' + item.deviceId + ',serviceId=' + item.serviceId + ',serviceVar=' + item.serviceVar + ',enabled=' + item.enabled + ',burst=' + item.burst + ';\n';
 			}
 			
-			console.log('{HundredGraphs packDeviceData} deviceDataHG: ', deviceData.length, deviceDataHG.length);
+			console.log('{HundredGraphs packDeviceData} deviceDataHG: ', deviceData.length, deviceDataHG.length, deviceData);
 			document.getElementById("stateDevs").innerHTML = "Saving devices";
+			//api.setDeviceStateVariable(device, SID_HG, "DeviceData", out, onSuccess, onFailure);
 			api.setDeviceStatePersistent(device, SID_HG, "DeviceData", out, {onSuccess: onSuccess, onFailure: onFailure});			
+			//api.setDeviceState(device, SID_HG, "DeviceData", out, {onSuccess: onSuccess, onFailure: onFailure});			
 			return true;
 		}catch(err){
 			console.warn('{HundredGraphs packDeviceData} err:', err);
@@ -960,7 +962,7 @@ var HundredGraphs = (function (api) {
             if (deviceDataHG?.length > 0) {
 				
 				//now get key from the device if no key present
-				deviceData = deviceDataHG.map(o=>{
+				deviceDataHG = deviceDataHG.map(o=>{
 					if (!o.key || !o.type) {
 						let dev = api.getDeviceObject(o.deviceId);
 						o.key = dev?.name || 'noname';
@@ -975,7 +977,8 @@ var HundredGraphs = (function (api) {
 					return o;
 				});
 				
-				deviceData = deviceData.concat().sort(sortBy2('serviceVar', 'key'));		
+				deviceDataHG = deviceDataHG.concat().sort(sortBy2('serviceVar', 'key'));	
+				deviceData = deviceDataHG;
 				console.log('HundredGraphs showDevices deviceData:', deviceData);
 				
 				// Display the button
@@ -983,9 +986,9 @@ var HundredGraphs = (function (api) {
 				html += '<div id="stateDevs" style="padding: 10px; background: lightgray;">If you have a lot of devices sometimes they are not saved on 1st run</div>';
 				html += '</p>'; 
 				html += '<p>'; 
-				html += '<input type="button" class="btn btn-info" value="Update Devices" onClick="HundredGraphs.getListDevices()" style="" />&nbsp';
 				html += '<input type="button" id="saveDevs" class="btn btn-success" value="Save" onClick="HundredGraphs.packDeviceData()"/>&nbsp';
-				html += '<input type="button" class="btn btn-danger" value="Reset" onClick="HundredGraphs.resetDevices()" />';			
+				html += '<input type="button" class="btn btn-danger" value="Reset" onClick="HundredGraphs.resetDevices()" />&nbsp';		
+				html += '<input type="button" class="btn btn-info" value="Rediscover Devices" onClick="HundredGraphs.getListDevices()" style="" />&nbsp';				
 				html += '</p>';  
 							
                 // Area to display statuses and error messages.
@@ -1018,6 +1021,7 @@ var HundredGraphs = (function (api) {
                     html += '<td><input type="checkbox" value="' + item.devNum + '" onClick="HundredGraphs.updateEnabled(' + i + ', this)" ' + item.enabled + ' style="margin-left:42%" /></td>';
 					html += '<td><input type="checkbox" value="' + item.devNum + '" onClick="HundredGraphs.burstEnabled(' + i + ', this)" ' + item.burst + ' style="margin-left:42%" /></td>';
                     html += '</tr>';
+					i++;
                 }
 
                 // Create empty row

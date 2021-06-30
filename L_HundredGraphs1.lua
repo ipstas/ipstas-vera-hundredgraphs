@@ -12,7 +12,7 @@
 
 local pkg = 'L_HundredGraphs1'
 module(pkg, package.seeall)
-local version = '3.9'
+local version = '3.10'
 
 local ltn12 = require("ltn12")
 local library  = require "L_HundredGraphsLibrary"
@@ -328,7 +328,8 @@ function UpdateVariablesHG(lul_device, lul_service, lul_variable, lul_value_old,
 		luup.reload()
 	end
 	LogHG("Updated devices: " .. lul_device .. ' var: ' .. lul_variable .. '\n')
-	luup.call_delay(reloadEngine(lul_device, lul_variable), 120)
+	--luup.call_delay(reloadEngine(lul_device, lul_variable), 120)
+	
 
 	--luup.call_action("urn:micasaverde-com:serviceId:HomeAutomationGateway1", "Reload", {}, 0)
 	-- GetWatchDevices(VARIABLES)
