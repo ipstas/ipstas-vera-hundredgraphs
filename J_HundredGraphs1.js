@@ -97,8 +97,8 @@ var HundredGraphs = (function (api) {
     let hg_sids = [];
     let hg_node = 1;  
     let enabled = 0;
-    let serverResponse = 'no response yet';
-    let lastRun = 'no response yet';
+    let serverResponse = 'No server response yet';
+    let lastRun = 'No server response yet';
     let devEnabled =  0;
 	let DEBUG = 0;
 	let stateHG = '';
@@ -148,6 +148,10 @@ var HundredGraphs = (function (api) {
 		}catch(e){
 			Utils.logError('Error in MyPlugin.getDevice(): ' + e);
 		}
+	}
+	function setReload(){
+		api.setDeviceStatePersistent(device, SID_HG, "Reload", true, {dynamic: true});
+		$('#reloadHG').remove();
 	}
 	function setAPI(){
 
@@ -208,9 +212,13 @@ var HundredGraphs = (function (api) {
 		enabled = parseInt(enabled);
 		devEnabled = parseInt(devEnabled);		
 		DEBUG = parseInt(DEBUG);
-				
-		serverResponse = JSON.parse(serverResponse);
-		serverResponse = JSON.stringify(serverResponse, undefined, 2);
+		
+		try{
+			serverResponse = JSON.parse(serverResponse);
+			serverResponse = JSON.stringify(serverResponse, undefined, 2);
+		}catch(err){
+			console.log('HG serverResponse:', err, serverResponse);
+		}
 
 		console.log('HG about device:', device, SID_HG, API, 'enabled:', enabled, 'devenabled:', devEnabled, 'version:', versionHG);
 		html = '<p id="state" style="display:none; padding:10px">' + stateHG + '</p>';
@@ -438,7 +446,7 @@ var HundredGraphs = (function (api) {
 		return true;
     }
 
-    function selectServiceID() {
+	function readServiceID(){
 		//sidsHG = [];
 		getDevice();
 		let oldsids = readCustom();
@@ -509,6 +517,12 @@ var HundredGraphs = (function (api) {
 		console.log('[HundredGraphs customDevices] sids:', sids);
 		
 		sidsHG = sids.concat().sort(sortByNeg('enabled'));		
+		return vars;
+	}
+    function selectServiceID() {
+		//sidsHG = [];
+		getDevice();
+		const vars = readServiceID();
 		
         try {
             html = '<p>We consider these variables common and they come preconfigured</p>';
@@ -669,6 +683,7 @@ var HundredGraphs = (function (api) {
     }
     function getListDevices(){
 		console.log('HundredGraphs getListDevices:', deviceDataHG?.length);
+		readServiceID();
 		if (!deviceDataHG?.length && device) 
 			unpackDeviceData(device);
         let allData = api.getUserData().devices;
@@ -696,7 +711,7 @@ var HundredGraphs = (function (api) {
 							burst: false,
 							n: true
 						}
-						if (p.serviceVar == 'Watts' || p.serviceVar == 'KWH' || p.serviceVar == 'Tripped' || p.serviceVar == 'BatteryLevel' || p.serviceVar == 'CurrentTemperature' )
+						if (p.serviceVar == 'Watts' || p.serviceVar == 'KWH' || p.serviceVar == 'Tripped' || p.serviceVar == 'BatteryLevel' || p.serviceVar == 'CurrentTemperature' || p.type == 'DoorLock' )
 							p.enabled = 'checked';
 						if (!deviceData?.length) {
 							//p.n = true;
@@ -859,7 +874,7 @@ var HundredGraphs = (function (api) {
 			document.getElementById("spinner").style.display = 'none';
 			document.getElementById("stateDevs").style.display = 'block';
 			document.getElementById("stateDevs").style.color = stateHG;
-			document.getElementById("stateDevs").innerHTML = "Devices are saved. If you have changed burst devices you need to make plugin to reread changes. To do so you simply can change reporting interval by 1 second and it would force it";
+			document.getElementById("stateDevs").innerHTML = "Devices are saved. <input type='button' id='reloadHG' class='btn btn-info' value='Reload Plugin' onClick='HundredGraphs.setReload()' />";
 			document.getElementById("saveDevs").style.color = stateHG;
 			document.getElementById("saveDevs").value = "OK";
 			console.log('{HundredGraphs packDeviceData} deviceData saved:', true);		
@@ -950,7 +965,7 @@ var HundredGraphs = (function (api) {
 		
 		getDevice();
 		
-		console.log('HundredGraphs showDevices deviceDataHG:', deviceDataHG);
+		//console.log('HundredGraphs showDevices deviceDataHG:', deviceDataHG);
 		if (!deviceDataHG.length)
 			unpackDeviceData(device);		
 
@@ -961,43 +976,63 @@ var HundredGraphs = (function (api) {
 			console.log('HundredGraphs showDevices deviceDataHG:', deviceDataHG);
             if (deviceDataHG?.length > 0) {
 				
+				console.log('HundredGraphs showDevices start deviceDataHG length:', deviceDataHG?.length);
 				//now get key from the device if no key present
+				let n = 0
 				deviceDataHG = deviceDataHG.map(o=>{
+					//console.log('HundredGraphs showDevices map adding key numb:', n);
+					//console.log('HundredGraphs showDevices map adding key o:', o);
+					//console.log('HundredGraphs showDevices map adding key getDeviceObject:', api.getDeviceObject(o.deviceId));
 					if (!o.key || !o.type) {
 						let dev = api.getDeviceObject(o.deviceId);
 						o.key = dev?.name || 'noname';
-						let type = dev?.device_type?.split(':');
-						o.type = type[type?.length - 2 ];
+						let type = dev?.device_type?.split(':') || '' ;
+						o.type = type[type?.length - 2 ] || 'missing';
 					}
 					if (o.n)
 						o.styleColor = 'lightgreen';
+					else if (o.type == 'missing')
+						o.styleColor = 'red';					
 					else
 						o.styleColor = 'white';
-					console.log('HundredGraphs showDevices map adding key:', o.deviceId, o, api.getDeviceObject(o.deviceId));
+					
+					//console.log('HundredGraphs showDevices map adding key o:', o);
+					//console.log('HundredGraphs showDevices map adding key:', o?.deviceId, o, api.getDeviceObject(o?.deviceId));
+					n++;
 					return o;
 				});
+				console.log('HundredGraphs showDevices map added devices:', n);
 				
+				//console.log('HundredGraphs showDevices deviceDataHG next deviceDataHG');
+				console.log('HundredGraphs showDevices deviceDataHG:', deviceDataHG);
 				deviceDataHG = deviceDataHG.concat().sort(sortBy2('serviceVar', 'key'));	
 				deviceData = deviceDataHG;
 				console.log('HundredGraphs showDevices deviceData:', deviceData);
 				
 				// Display the button
 				html += '<p>'; 
-				html += '<div id="stateDevs" style="padding: 10px; background: lightgray;"></div>';
+				html += '<div id="stateDevs" style="padding: 10px; background: lightgray;">';
+				html += '<div id="stateDevsBusy" class="invisible text-center" style="display: none;"><img src="/cmh/skins/default/img/other/loaderGreenBig.gif" /></div>';
+				html += '</div>';
 				html += '</p>'; 
 				html += '<p>'; 
 				html += '<input type="button" id="saveDevs" class="btn btn-success" value="Save" onClick="HundredGraphs.packDeviceData()"/>&nbsp';
 				html += '<input type="button" class="btn btn-danger" value="Reset" onClick="HundredGraphs.resetDevices()" />&nbsp';		
 				html += '<input type="button" class="btn btn-info" value="Rediscover Devices" onClick="HundredGraphs.getListDevices()" style="" />&nbsp';				
 				html += '</p>';  
-							
+				html += '<p>'; 
+				html += 'Rediscovering devices will not delete already configured but will add new ones'; 
+				html += '</p>'; 
+				html += '<p>'; 
+				html += 'Selecting <b>burst</b> will add that device to  the Watched list. HundredGraphs will collect device updates between data submissions and then submit them in a bundle during next submission. Sometimes it means the interval between updates is very short and thus it is "burst". Every plan starts with 200 bursts per month but you can buy more. <a href="https://www.hundredgraphs.com/pricing" target=_blank>It is cheap!</a>'; 
+				html += '</p>'; 
+				
                 // Area to display statuses and error messages.
                 html += '<p id="status_display" style="width:90%; position:relative; margin-left:auto; margin-right:auto; table-layout:fixed; text-align:center; color:black"></p>';
-                html += '<p id="" style="">Node: <input type="text" id="deviceNode" class="form-control ds-input" style="max-width: 60px;display: inline;" name="deviceNode" value=' + hg_node + ' oninput="this.value = this.value.replace(/[^0-9.]/g, \'\').replace(/(\..*)\./g, \'$1\');"> numerical only</p>';
+                html += '<p id="" style="">Node: <input type="text" id="deviceNode" class="form-control ds-input" style="max-width: 60px;display: inline;" name="deviceNode" value=' + hg_node + ' oninput="this.value = this.value.replace(/[^0-9.]/g, \'\').replace(/(\..*)\./g, \'$1\');"> numerical only. This is what your house will be known in HundredGraphs</p>';
 
 				html += '<div id="spinner" class="favorites_device_busy_device_overlay" style="display:none;"><div class="round_loading deviceCpanelBusySpinner"></div></div>';
-
-				
+		
                 // show devices
                 html += '<br\><table style="width:90%; position:relative; margin-left:auto; margin-right:auto">';
                 // Show titles
@@ -1059,11 +1094,13 @@ var HundredGraphs = (function (api) {
         about: about,
 		aboutSet: aboutSet,
         getDevice: getDevice,
+        setReload: setReload,
         setAPI: setAPI,
 		sidEnabled: sidEnabled,
         getListDevices: getListDevices,
         updateEnabled: updateEnabled,
 		burstEnabled: burstEnabled,
+        readServiceID: readServiceID,
         selectServiceID: selectServiceID,
         customDevices: customDevices,
         energyHG: energyHG,
